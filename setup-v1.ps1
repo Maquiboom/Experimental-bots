@@ -4,7 +4,7 @@ $root = Join-Path (Get-Location) "MaquiBotV1"
 function Log($m){ Write-Host "[INSTALLER] $m" }
 
 Log "===================================="
-Log " MAQUIBOT V1 FULL FIX INSTALLER"
+Log " MAQUIBOT V1 INSTALLER"
 Log "===================================="
 
 # ================= CLEAN =================
@@ -385,5 +385,5 @@ Pop-Location
 
 Log "===================================="
 Log " INSTALL COMPLETE V1 FIXED"
-Log " RUN start.ps1"
+Log " RUN cd ./MaquiBotV1 && ./start.ps1"
 Log "===================================="
