@@ -138,7 +138,7 @@ bot.once("spawn",()=>{
     move = new Movements(bot)
     bot.pathfinder.setMovements(move)
 
-    log("system","Bot online ✔ Pathfinder ready")
+    log("system","Bot online ✔")
 })
 
 bot.on("chat",(u,m)=>{
