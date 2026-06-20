@@ -32,6 +32,6 @@ Before installing, make sure you have:
 # 🚀 Installation
 ## Open powershell and execute
 ```bash
-irm https://raw.githubusercontent.com/Maquiboom/MaquiBot/main/installer.ps1 | iex
+irm https://raw.githubusercontent.com/Maquiboom/Mineflayer-Bot/main/installer.ps1 | iex
 ```
 Then you only execute the start.ps1 and that's all
