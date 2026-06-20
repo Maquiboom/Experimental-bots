@@ -1,5 +1,5 @@
 
-$root = Join-Path $PSScriptRoot "MaquiBotV1"
+$root = Join-Path (Get-Location) "MaquiBotV1"
 
 function Log($m){ Write-Host "[INSTALLER] $m" }
 
