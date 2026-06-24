@@ -364,7 +364,12 @@ if($key.Key -eq "DownArrow"){ if($i -lt 2){$i++} }
 
 if($key.Key -eq "Enter"){
 switch($i){
-0 {Start-Process "node" -ArgumentList "bot.js"}
+0 {
+    Start-Process `
+        "$root\nodejs\node.exe" `
+        -WorkingDirectory $root `
+        -ArgumentList "bot.js"
+}
 1 {Start-Process "http://localhost:3000"}
 2 {exit}
 }
@@ -377,10 +382,27 @@ Menu $i
 Menu 0
 '@ | Out-File "$root\start.ps1" -Encoding utf8
 
+# ================= NODE PORTABLE =================
+Log "Descargando Node.js Portable v22 x64..."
+
+$nodeVersion = "v22.18.0"
+$nodeZip = "$env:TEMP\node22.zip"
+$nodeUrl = "https://nodejs.org/dist/$nodeVersion/node-$nodeVersion-win-x64.zip"
+
+Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeZip
+
+Expand-Archive -Path $nodeZip -DestinationPath $root -Force
+
+Rename-Item `
+    "$root\node-$nodeVersion-win-x64" `
+    "$root\nodejs"
+
+Remove-Item $nodeZip -Force
+
 # ================= INSTALL =================
 Log "Instalando dependencias..."
 Push-Location $root
-npm install
+& "$root\nodejs\npm.cmd" install
 Pop-Location
 
 Log "===================================="
