@@ -39,8 +39,9 @@ Before installing, make sure you have:
 
 ```bash
 irm https://raw.githubusercontent.com/Maquiboom/Mineflayer-bot/refs/heads/main/setup-v1.1-MaquiBot.ps1 | iex
-
+```
 # Now i made a experimental fnaf 1 bot witch learns with time i made it using guides and some help :)
 ## Open PowerShell and execute:
 ```bash
 irm https://raw.githubusercontent.com/Maquiboom/Mineflayer-bot/refs/heads/main/setup-v1.1-FNaFBot.ps1 | iex
+```
