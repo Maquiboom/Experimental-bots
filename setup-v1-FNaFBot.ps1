@@ -1,81 +1,61 @@
-# ============================================================
-# RedNeuronal FNAF 1
-# Bloque 1/5
-# Instalador base + entorno virtual
-# ============================================================
-
-
-$project = "RedNeuronal FNAF1"
-
-
-$scriptFolder = Split-Path `
-    -Parent `
-    $MyInvocation.MyCommand.Path
-
+$project = Join-Path `
+    (Get-Location).Path `
+    "RedNeuronal-FNAF1"
 
 
 Write-Host ""
 
-Write-Host "======================================" `
--ForegroundColor Cyan
-
-Write-Host " RedNeuronal FNAF 1 "
-
-Write-Host " Instalacion base "
-
-Write-Host "======================================" `
--ForegroundColor Cyan
-
-
+Write-Host "====================================" -ForegroundColor Cyan
+Write-Host " RedNeuronal FNAF 1 Installer " -ForegroundColor Cyan
+Write-Host "====================================" -ForegroundColor Cyan
 
 Write-Host ""
 
 
 
-# ============================================================
-# Backup del modelo anterior
-# ============================================================
+if(Test-Path $project){
+
+    Write-Host "Proyecto existente encontrado." -ForegroundColor Yellow
 
 
-$oldModel = Join-Path `
-    $project `
-    "models\model.pt"
-
-
-$backup = Join-Path `
-    $scriptFolder `
-    "model_backup.pt"
+    $oldModel = Join-Path `
+        $project `
+        "models\checkpoint.pt"
 
 
 
-if(Test-Path $oldModel){
+    if(Test-Path $oldModel){
 
 
-    Write-Host "Guardando modelo anterior..." `
-    -ForegroundColor Yellow
+        $backup = Join-Path `
+            (Get-Location).Path `
+            "FNAF_checkpoint_backup.pt"
 
 
 
-    if(Test-Path $backup){
+        Copy-Item `
+            $oldModel `
+            $backup `
+            -Force
 
 
-        Remove-Item `
-        $backup `
-        -Force
+
+        Write-Host "Checkpoint guardado:" -ForegroundColor Green
+
+        Write-Host $backup
 
     }
 
 
 
-    Copy-Item `
-    $oldModel `
-    $backup `
-    -Force
+    Remove-Item `
+        $project `
+        -Recurse `
+        -Force
 
 
 
-    Write-Host "Modelo guardado." `
-    -ForegroundColor Green
+    Write-Host "Proyecto anterior eliminado." -ForegroundColor Green
 
 }
 
@@ -83,39 +63,36 @@ if(Test-Path $oldModel){
 
 
 
+New-Item `
+    -ItemType Directory `
+    -Path $project `
+    -Force | Out-Null
 
 
-# ============================================================
-# Crear estructura
-# ============================================================
 
 
 
 $folders=@(
 
+    "ai",
 
-"$project",
+    "environment",
 
-"$project\ai",
+    "ui",
 
-"$project\environment",
+    "config",
 
-"$project\ui",
+    "models",
 
-"$project\config",
+    "logs",
 
-"$project\models",
+    "data",
 
-"$project\logs",
-
-"$project\data",
-
-"$project\data\screenshots",
-
-"$project\venv"
-
+    "data\vision_memory"
 
 )
+
+
 
 
 
@@ -123,13 +100,14 @@ foreach($folder in $folders){
 
 
     New-Item `
-    -ItemType Directory `
-    -Path $folder `
-    -Force | Out-Null
 
+        -ItemType Directory `
+
+        -Path (Join-Path $project $folder) `
+
+        -Force | Out-Null
 
 }
-
 
 
 
@@ -137,154 +115,53 @@ foreach($folder in $folders){
 
 Write-Host ""
 
-Write-Host "Carpetas creadas." `
--ForegroundColor Green
+Write-Host "Estructura creada." -ForegroundColor Green
 
 
 
 
 
-
-
-# ============================================================
-# Crear entorno virtual
-# ============================================================
-
-
-Set-Location `
-$project
-
-
-
-if(!(Test-Path "venv\Scripts\python.exe")){
-
-
-    Write-Host ""
-
-    Write-Host "Creando entorno virtual..." `
-    -ForegroundColor Cyan
-
-
-
-    python -m venv venv
-
-
-}
-else{
-
-
-    Write-Host "Entorno virtual encontrado." `
-    -ForegroundColor Green
-
-}
-
-
-
-
-
-
-
-# ============================================================
-# requirements.txt
-# ============================================================
-
-
-@'
+$requirements=@'
 torch
 torchvision
-
 opencv-python
 numpy
-
 pyautogui
 pillow
-
 pyqt6
 pyqtgraph
-
 matplotlib
-
-keyboard
-mouse
-
-tqdm
-'@ | Set-Content `
-"requirements.txt" `
--Encoding UTF8
+'@
 
 
 
 
 
+Set-Content `
 
+    -Path (Join-Path $project "requirements.txt") `
 
-# ============================================================
-# Activar entorno
-# ============================================================
+    -Value $requirements `
 
-
-Write-Host ""
-
-Write-Host "Activando entorno virtual..." `
--ForegroundColor Cyan
+    -Encoding UTF8
 
 
 
-.\venv\Scripts\activate
-
-
-
-
-
-
-# ============================================================
-# Actualizar pip
-# ============================================================
-
-
-python -m pip install --upgrade pip
-
-
-
-
-
-
-
-# ============================================================
-# Instalar dependencias
-# ============================================================
-
-
-Write-Host ""
-
-Write-Host "Instalando dependencias..." `
--ForegroundColor Cyan
-
-
-
-pip install -r requirements.txt
-
-
-
-
-
-
-# ============================================================
-# Crear archivos init
-# ============================================================
 
 
 $initFiles=@(
 
-"ai\__init__.py",
+    "ai\__init__.py",
 
-"environment\__init__.py",
+    "environment\__init__.py",
 
-"ui\__init__.py",
+    "ui\__init__.py",
 
-"config\__init__.py"
+    "config\__init__.py"
 
 )
+
+
 
 
 
@@ -292,10 +169,12 @@ foreach($file in $initFiles){
 
 
     New-Item `
-    -ItemType File `
-    -Path $file `
-    -Force | Out-Null
 
+        -ItemType File `
+
+        -Path (Join-Path $project $file) `
+
+        -Force | Out-Null
 
 }
 
@@ -303,67 +182,140 @@ foreach($file in $initFiles){
 
 
 
+$config=@'
+import os
 
 
-# ============================================================
-# Configuracion inicial
-# ============================================================
+
+BASE_DIR=os.path.dirname(
+
+    os.path.dirname(
+
+        os.path.abspath(__file__)
+
+    )
+
+)
 
 
-@'
-{
-    "capture": {
-        "x":0,
-        "y":0,
-        "width":1280,
-        "height":720
-    }
+
+MODEL_PATH=os.path.join(
+
+    BASE_DIR,
+
+    "models",
+
+    "checkpoint.pt"
+
+)
+
+
+
+SCREENSHOT_PATH=os.path.join(
+
+    BASE_DIR,
+
+    "data",
+
+    "vision_memory"
+
+)
+
+
+
+STATE_SIZE=56
+
+
+ACTION_SIZE=14
+
+
+
+LEARNING_RATE=0.0005
+
+
+GAMMA=0.95
+
+
+
+MEMORY_SIZE=50000
+
+
+BATCH_SIZE=64
+
+
+
+EPSILON_START=1.0
+
+
+EPSILON_END=0.05
+
+
+EPSILON_DECAY=0.995
+
+
+
+TARGET_UPDATE=500
+
+
+
+IMAGE_SIZE=224
+
+'@
+
+
+
+
+
+Set-Content `
+
+    -Path (Join-Path $project "config\config.py") `
+
+    -Value $config `
+
+    -Encoding UTF8
+
+
+
+
+
+Write-Host ""
+
+Write-Host "Creando entorno virtual..." -ForegroundColor Cyan
+
+
+
+
+
+$venv = Join-Path `
+    $project `
+    "venv"
+
+
+
+
+
+python -m venv $venv
+
+
+
+
+
+$python = Join-Path `
+    $venv `
+    "Scripts\python.exe"
+
+
+
+
+
+if(!(Test-Path $python)){
+
+
+    Write-Host "No se pudo crear Python virtual." -ForegroundColor Red
+
+    exit
+
 }
-'@ | Set-Content `
-"config\settings.json" `
--Encoding UTF8
-
-
-
-
-
-
-
-# ============================================================
-# Calibration vacio
-# ============================================================
-
-
-@'
-{}
-'@ | Set-Content `
-"config\calibration.json" `
--Encoding UTF8
-
-
-
-
-
-
-
-# ============================================================
-# Crear carpetas de datos
-# ============================================================
-
-
-New-Item `
--ItemType Directory `
--Path "data\vision_memory" `
--Force | Out-Null
-
-
-
-New-Item `
--ItemType Directory `
--Path "logs" `
--Force | Out-Null
-
-
 
 
 
@@ -371,140 +323,31 @@ New-Item `
 
 Write-Host ""
 
-Write-Host "======================================" `
--ForegroundColor Green
+Write-Host "Instalando dependencias..." -ForegroundColor Cyan
 
-Write-Host " Base creada correctamente "
+
+
+
+
+& $python -m pip install --upgrade pip
+
+
+
+
+
+& $python -m pip install `
+
+    -r (Join-Path $project "requirements.txt")
+
+
+
+
 
 Write-Host ""
 
-Write-Host "Entorno virtual listo."
+Write-Host "Base del proyecto creada." -ForegroundColor Green
 
-Write-Host ""
-
-Write-Host "Siguiente bloque: IA CNN + DQN"
-
-Write-Host "======================================" `
--ForegroundColor Green
-
-# ============================================================
-# RedNeuronal FNAF 1
-# Bloque 2/5
-# CNN Vision + DQN + Replay Memory
-# ============================================================
-
-
-
-# ============================================================
-# ai/vision_net.py
-# ============================================================
-
-
-@'
-import torch
-
-import torch.nn as nn
-
-
-
-
-
-class VisionNetwork(nn.Module):
-
-
-    def __init__(self):
-
-        super().__init__()
-
-
-
-        self.features = nn.Sequential(
-
-
-            nn.Conv2d(
-                3,
-                16,
-                kernel_size=5,
-                stride=2
-            ),
-
-            nn.ReLU(),
-
-
-            nn.Conv2d(
-                16,
-                32,
-                kernel_size=5,
-                stride=2
-            ),
-
-            nn.ReLU(),
-
-
-            nn.Conv2d(
-                32,
-                64,
-                kernel_size=3,
-                stride=2
-            ),
-
-            nn.ReLU()
-
-        )
-
-
-
-        self.classifier = nn.Sequential(
-
-
-            nn.Flatten(),
-
-
-            nn.Linear(
-                64*7*7,
-                128
-            ),
-
-
-            nn.ReLU(),
-
-
-            nn.Linear(
-                128,
-                32
-            )
-
-        )
-
-
-
-
-
-    def forward(self,x):
-
-
-        x=self.features(x)
-
-
-        return self.classifier(x)
-
-
-
-'@ | Set-Content `
-"$project\ai\vision_net.py" `
--Encoding UTF8
-
-
-
-
-
-
-# ============================================================
-# ai/model.py
-# ============================================================
-
-
-@'
+$model=@'
 import torch
 
 import torch.nn as nn
@@ -524,13 +367,14 @@ class FNAFNetwork(nn.Module):
         super().__init__()
 
 
-
         self.layers=nn.Sequential(
 
-
             nn.Linear(
+
                 STATE_SIZE,
+
                 256
+
             ),
 
             nn.ReLU(),
@@ -538,8 +382,11 @@ class FNAFNetwork(nn.Module):
 
 
             nn.Linear(
+
                 256,
+
                 256
+
             ),
 
             nn.ReLU(),
@@ -547,8 +394,11 @@ class FNAFNetwork(nn.Module):
 
 
             nn.Linear(
+
                 256,
+
                 128
+
             ),
 
             nn.ReLU(),
@@ -556,8 +406,147 @@ class FNAFNetwork(nn.Module):
 
 
             nn.Linear(
+
                 128,
+
                 ACTION_SIZE
+
+            )
+
+        )
+
+
+
+
+
+    def forward(self,x):
+
+        return self.layers(x)
+
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "ai\model.py") `
+    -Value $model `
+    -Encoding UTF8
+
+
+
+
+
+
+
+$visionNet=@'
+import torch
+
+import torch.nn as nn
+
+
+from config.config import IMAGE_SIZE
+
+
+
+
+
+class VisionNetwork(nn.Module):
+
+
+    def __init__(self):
+
+        super().__init__()
+
+
+
+        self.features=nn.Sequential(
+
+            nn.Conv2d(
+
+                3,
+
+                16,
+
+                5,
+
+                stride=2
+
+            ),
+
+            nn.ReLU(),
+
+
+
+            nn.Conv2d(
+
+                16,
+
+                32,
+
+                5,
+
+                stride=2
+
+            ),
+
+            nn.ReLU(),
+
+
+
+            nn.Conv2d(
+
+                32,
+
+                64,
+
+                5,
+
+                stride=2
+
+            ),
+
+            nn.ReLU()
+
+        )
+
+
+
+
+        self.pool=nn.AdaptiveAvgPool2d(
+
+            (4,4)
+
+        )
+
+
+
+
+        self.output=nn.Sequential(
+
+            nn.Flatten(),
+
+
+
+            nn.Linear(
+
+                64*4*4,
+
+                128
+
+            ),
+
+
+
+            nn.ReLU(),
+
+
+
+            nn.Linear(
+
+                128,
+
+                32
+
             )
 
         )
@@ -569,13 +558,22 @@ class FNAFNetwork(nn.Module):
     def forward(self,x):
 
 
-        return self.layers(x)
+        x=self.features(x)
+
+
+        x=self.pool(x)
+
+
+        return self.output(x)
+
+'@
 
 
 
-'@ | Set-Content `
-"$project\ai\model.py" `
--Encoding UTF8
+Set-Content `
+    -Path (Join-Path $project "ai\vision_net.py") `
+    -Value $visionNet `
+    -Encoding UTF8
 
 
 
@@ -583,15 +581,10 @@ class FNAFNetwork(nn.Module):
 
 
 
-# ============================================================
-# ai/replay.py
-# ============================================================
-
-
-@'
-from collections import deque
-
+$memory=@'
 import random
+
+from collections import deque
 
 
 
@@ -627,18 +620,16 @@ class ReplayMemory:
 
 
 
-
-    def sample(self,batch):
+    def sample(self,size):
 
 
         return random.sample(
 
             self.memory,
 
-            batch
+            size
 
         )
-
 
 
 
@@ -653,24 +644,22 @@ class ReplayMemory:
 
         )
 
-
-
-'@ | Set-Content `
-"$project\ai\replay.py" `
--Encoding UTF8
+'@
 
 
 
+Set-Content `
+    -Path (Join-Path $project "ai\replay.py") `
+    -Value $memory `
+    -Encoding UTF8
 
 
 
 
-# ============================================================
-# ai/agent.py
-# ============================================================
 
 
-@'
+
+$agent=@'
 import os
 
 import random
@@ -691,7 +680,6 @@ from ai.replay import ReplayMemory
 
 
 from config.config import *
-
 
 
 
@@ -734,22 +722,6 @@ class Agent:
 
 
 
-        self.target.load_state_dict(
-
-            self.model.state_dict()
-
-        )
-
-
-
-        self.memory=ReplayMemory(
-
-            MEMORY_SIZE
-
-        )
-
-
-
         self.optimizer=optim.Adam(
 
             self.model.parameters(),
@@ -764,26 +736,29 @@ class Agent:
 
 
 
+        self.memory=ReplayMemory(
+
+            MEMORY_SIZE
+
+        )
+
+
+
         self.epsilon=EPSILON_START
 
 
-
-        self.loss_value=0
-
+        self.steps=0
 
 
 
+        self.load()
 
 
-    def act(
 
-        self,
 
-        state,
 
-        explore=True
 
-    ):
+    def act(self,state,explore=True):
 
 
         if explore and random.random()<self.epsilon:
@@ -794,7 +769,6 @@ class Agent:
                 ACTION_SIZE
 
             )
-
 
 
 
@@ -813,7 +787,7 @@ class Agent:
         with torch.no_grad():
 
 
-            q=self.model(
+            output=self.model(
 
                 state
 
@@ -823,10 +797,9 @@ class Agent:
 
         return torch.argmax(
 
-            q
+            output
 
         ).item()
-
 
 
 
@@ -854,19 +827,20 @@ class Agent:
 
             (
 
-            state,
+                state,
 
-            action,
+                action,
 
-            reward,
+                reward,
 
-            next_state,
+                next_state,
 
-            done
+                done
 
             )
 
         )
+
 
 
 
@@ -880,8 +854,6 @@ class Agent:
         if len(self.memory)<BATCH_SIZE:
 
             return
-
-
 
 
 
@@ -906,7 +878,10 @@ class Agent:
 
 
 
-        for s,a,r,n,d in batch:
+        for item in batch:
+
+
+            s,a,r,n,d=item
 
 
             states.append(s)
@@ -1002,7 +977,6 @@ class Agent:
 
 
 
-
         with torch.no_grad():
 
 
@@ -1032,7 +1006,6 @@ class Agent:
 
 
 
-
         loss=self.loss_function(
 
             current,
@@ -1055,7 +1028,7 @@ class Agent:
 
 
 
-        self.loss_value=loss.item()
+        self.steps+=1
 
 
 
@@ -1069,74 +1042,7 @@ class Agent:
 
 
 
-
-
-
-
-
-    def update_target(self):
-
-
-        self.target.load_state_dict(
-
-            self.model.state_dict()
-
-        )
-
-
-
-
-
-
-
-    def save(self):
-
-
-        os.makedirs(
-
-            "models",
-
-            exist_ok=True
-
-        )
-
-
-
-        torch.save(
-
-            self.model.state_dict(),
-
-            "models/model.pt"
-
-        )
-
-
-
-
-
-
-
-    def load(self):
-
-
-        if os.path.exists(
-
-            "models/model.pt"
-
-        ):
-
-
-            self.model.load_state_dict(
-
-                torch.load(
-
-                    "models/model.pt",
-
-                    map_location=self.device
-
-                )
-
-            )
+        if self.steps % TARGET_UPDATE==0:
 
 
             self.target.load_state_dict(
@@ -1147,76 +1053,121 @@ class Agent:
 
 
 
-'@ | Set-Content `
-"$project\ai\agent.py" `
--Encoding UTF8
+
+
+
+
+
+    def save(self):
+
+
+        torch.save(
+
+            {
+
+            "model":self.model.state_dict(),
+
+            "target":self.target.state_dict(),
+
+            "optimizer":self.optimizer.state_dict(),
+
+            "epsilon":self.epsilon,
+
+            "steps":self.steps
+
+            },
+
+            MODEL_PATH
+
+        )
 
 
 
 
 
 
-
-# ============================================================
-# Actualizar configuracion
-# ============================================================
+    def load(self):
 
 
-@'
-BASE_DIR="."
+        if not os.path.exists(
 
+            MODEL_PATH
 
+        ):
 
-MODEL_PATH="models/model.pt"
+            self.target.load_state_dict(
 
+                self.model.state_dict()
 
+            )
 
-VISION_MODEL_PATH="models/vision.pt"
-
-
-
-STATE_SIZE=56
+            return
 
 
 
-ACTION_SIZE=14
+
+
+        checkpoint=torch.load(
+
+            MODEL_PATH,
+
+            map_location=self.device
+
+        )
 
 
 
-LEARNING_RATE=0.0005
+        self.model.load_state_dict(
+
+            checkpoint["model"]
+
+        )
 
 
 
-GAMMA=0.95
+        self.target.load_state_dict(
+
+            checkpoint["target"]
+
+        )
 
 
 
-MEMORY_SIZE=100000
+        self.optimizer.load_state_dict(
+
+            checkpoint["optimizer"]
+
+        )
 
 
 
-BATCH_SIZE=64
+        self.epsilon=checkpoint.get(
+
+            "epsilon",
+
+            EPSILON_START
+
+        )
 
 
 
-EPSILON_START=1.0
+        self.steps=checkpoint.get(
+
+            "steps",
+
+            0
+
+        )
+
+
+'@
 
 
 
-EPSILON_END=0.05
-
-
-
-EPSILON_DECAY=0.995
-
-
-
-TARGET_UPDATE=500
-
-'@ | Set-Content `
-"$project\config\config.py" `
--Encoding UTF8
-
+Set-Content `
+    -Path (Join-Path $project "ai\agent.py") `
+    -Value $agent `
+    -Encoding UTF8
 
 
 
@@ -1224,29 +1175,9 @@ TARGET_UPDATE=500
 
 Write-Host ""
 
-Write-Host "IA CNN + DQN creada correctamente." `
--ForegroundColor Green
+Write-Host "IA creada correctamente." -ForegroundColor Green
 
-
-Write-Host ""
-
-Write-Host "Siguiente bloque: Entorno FNAF + captura pantalla + controles." `
--ForegroundColor Cyan
-
-# ============================================================
-# RedNeuronal FNAF 1
-# Bloque 3/5
-# Entorno + Vision + Control
-# ============================================================
-
-
-
-# ============================================================
-# environment/actions.py
-# ============================================================
-
-
-@'
+$actions=@'
 ACTIONS=[
 
     "open_monitor",
@@ -1269,13 +1200,13 @@ ACTIONS=[
 
     "wait",
 
-    "extra_1",
+    "action_10",
 
-    "extra_2",
+    "action_11",
 
-    "extra_3",
+    "action_12",
 
-    "extra_4"
+    "action_13"
 
 ]
 
@@ -1291,37 +1222,42 @@ def get_action(index):
         return None
 
 
-
     if index >= len(ACTIONS):
 
         return None
 
 
-
     return ACTIONS[index]
 
-'@ | Set-Content `
-"$project\environment\actions.py" `
--Encoding UTF8
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "environment\actions.py") `
+    -Value $actions `
+    -Encoding UTF8
 
 
 
 
 
 
-# ============================================================
-# environment/vision.py
-# ============================================================
 
-
-@'
+$vision=@'
 import cv2
 
 import numpy as np
 
 import pyautogui
 
-import torch
+import os
+
+import time
+
+
+
+from config.config import IMAGE_SIZE,SCREENSHOT_PATH
 
 
 
@@ -1334,7 +1270,13 @@ class Vision:
     def __init__(self):
 
 
-        self.size=(224,224)
+        self.size=(
+
+            IMAGE_SIZE,
+
+            IMAGE_SIZE
+
+        )
 
 
 
@@ -1345,13 +1287,13 @@ class Vision:
     def capture(self):
 
 
-        image=pyautogui.screenshot()
+        screenshot=pyautogui.screenshot()
 
 
 
         frame=np.array(
 
-            image
+            screenshot
 
         )
 
@@ -1368,7 +1310,6 @@ class Vision:
 
 
         return frame
-
 
 
 
@@ -1412,11 +1353,11 @@ class Vision:
 
             (
 
-            2,
+                2,
 
-            0,
+                0,
 
-            1
+                1
 
             )
 
@@ -1424,36 +1365,56 @@ class Vision:
 
 
 
-        tensor=torch.tensor(
-
-            frame
-
-        ).unsqueeze(0)
-
-
-
-        return tensor
+        return frame
 
 
 
 
 
 
+    def save(self,frame):
 
-    def save(self,frame,path):
+
+        os.makedirs(
+
+            SCREENSHOT_PATH,
+
+            exist_ok=True
+
+        )
+
+
+
+        filename=os.path.join(
+
+            SCREENSHOT_PATH,
+
+            str(
+
+                int(time.time()*1000)
+
+            )+".png"
+
+        )
+
 
 
         cv2.imwrite(
 
-            path,
+            filename,
 
             frame
 
         )
 
-'@ | Set-Content `
-"$project\environment\vision.py" `
--Encoding UTF8
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "environment\vision.py") `
+    -Value $vision `
+    -Encoding UTF8
 
 
 
@@ -1461,23 +1422,14 @@ class Vision:
 
 
 
-# ============================================================
-# environment/controller.py
-# ============================================================
-
-
-@'
+$controller=@'
 import json
 
 import os
 
-import pyautogui
-
 import time
 
-
-
-from config.config import *
+import pyautogui
 
 
 
@@ -1490,10 +1442,14 @@ class Controller:
     def __init__(self):
 
 
+        self.path="config/calibration.json"
+
+
         self.points={}
 
 
         self.load()
+
 
 
 
@@ -1504,22 +1460,25 @@ class Controller:
 
         if os.path.exists(
 
-            "config/calibration.json"
+            self.path
 
         ):
 
 
             with open(
 
-                "config/calibration.json",
+                self.path,
 
                 "r"
 
-            ) as f:
+            ) as file:
 
 
-                self.points=json.load(f)
+                self.points=json.load(
 
+                    file
+
+                )
 
 
 
@@ -1535,7 +1494,7 @@ class Controller:
 
             print(
 
-                "Falta calibrar:",
+                "Sin calibrar:",
 
                 name
 
@@ -1548,15 +1507,15 @@ class Controller:
 
 
 
-        pos=self.points[name]
+        position=self.points[name]
 
 
 
         pyautogui.click(
 
-            pos["x"],
+            position["x"],
 
-            pos["y"]
+            position["y"]
 
         )
 
@@ -1564,9 +1523,10 @@ class Controller:
 
         time.sleep(
 
-            0.1
+            0.15
 
         )
+
 
 
 
@@ -1577,38 +1537,42 @@ class Controller:
     def execute(self,action):
 
 
-        self.click(
-
-            action
-
-        )
-
-'@ | Set-Content `
-"$project\environment\controller.py" `
--Encoding UTF8
+        if action:
 
 
+            self.click(
 
+                action
+
+            )
+
+'@
 
 
 
+Set-Content `
+    -Path (Join-Path $project "environment\controller.py") `
+    -Value $controller `
+    -Encoding UTF8
 
-# ============================================================
-# environment/calibration.py
-# ============================================================
 
 
-@'
+
+
+
+
+$calibration=@'
 import tkinter as tk
 
 import json
+
+import os
 
 
 
 
 
 BUTTONS=[
-
 
 "open_monitor",
 
@@ -1626,11 +1590,11 @@ BUTTONS=[
 
 "right_light",
 
-"right_door",
-
-"wait"
+"right_door"
 
 ]
+
+
 
 
 
@@ -1656,11 +1620,12 @@ class Calibration:
 
         print(
 
-            "Selecciona",
+            "Pulsa sobre:",
 
             name
 
         )
+
 
 
         root=tk.Tk()
@@ -1675,7 +1640,8 @@ class Calibration:
         )
 
 
-        position=[]
+
+        result=[]
 
 
 
@@ -1684,7 +1650,7 @@ class Calibration:
         def click(event):
 
 
-            position.append(
+            result.append(
 
                 {
 
@@ -1716,12 +1682,10 @@ class Calibration:
 
 
 
+        if result:
 
 
-        if position:
-
-
-            self.data[name]=position[0]
+            self.data[name]=result[0]
 
 
 
@@ -1744,6 +1708,15 @@ class Calibration:
 
 
 
+        os.makedirs(
+
+            "config",
+
+            exist_ok=True
+
+        )
+
+
 
         with open(
 
@@ -1751,22 +1724,27 @@ class Calibration:
 
             "w"
 
-        ) as f:
+        ) as file:
 
 
             json.dump(
 
                 self.data,
 
-                f,
+                file,
 
                 indent=4
 
             )
 
-'@ | Set-Content `
-"$project\environment\calibration.py" `
--Encoding UTF8
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "environment\calibration.py") `
+    -Value $calibration `
+    -Encoding UTF8
 
 
 
@@ -1774,12 +1752,7 @@ class Calibration:
 
 
 
-# ============================================================
-# environment/state.py
-# ============================================================
-
-
-@'
+$state=@'
 import numpy as np
 
 
@@ -1790,7 +1763,7 @@ class GameState:
 
 
 
-    def build(self,vision_vector):
+    def build(self,features):
 
 
         state=np.zeros(
@@ -1802,26 +1775,28 @@ class GameState:
         )
 
 
+        size=min(
 
-        length=min(
+            len(features),
 
-            len(vision_vector),
-
-            32
+            56
 
         )
 
 
-
-        state[:length]=vision_vector[:length]
-
+        state[:size]=features[:size]
 
 
         return state
 
-'@ | Set-Content `
-"$project\environment\state.py" `
--Encoding UTF8
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "environment\state.py") `
+    -Value $state `
+    -Encoding UTF8
 
 
 
@@ -1829,15 +1804,10 @@ class GameState:
 
 
 
-# ============================================================
-# environment/env.py
-# ============================================================
-
-
-@'
-import torch
-
+$environment=@'
 import time
+
+import torch
 
 
 
@@ -1845,9 +1815,11 @@ from environment.vision import Vision
 
 from environment.controller import Controller
 
+from environment.actions import get_action
+
 from environment.state import GameState
 
-from environment.actions import get_action
+
 
 from ai.vision_net import VisionNetwork
 
@@ -1872,11 +1844,10 @@ class FNAFEnvironment:
 
 
 
-        self.visual_net=VisionNetwork()
+        self.network=VisionNetwork()
 
 
-
-        self.visual_net.eval()
+        self.network.eval()
 
 
 
@@ -1891,7 +1862,7 @@ class FNAFEnvironment:
 
 
 
-        return self.get_state(
+        return self.make_state(
 
             frame
 
@@ -1903,7 +1874,8 @@ class FNAFEnvironment:
 
 
 
-    def get_state(self,frame):
+
+    def make_state(self,frame):
 
 
         image=self.vision.process(
@@ -1914,20 +1886,30 @@ class FNAFEnvironment:
 
 
 
+        tensor=torch.tensor(
+
+            image
+
+        ).unsqueeze(0)
+
+
+
+
+
         with torch.no_grad():
 
 
-            vector=self.visual_net(
+            output=self.network(
 
-                image
+                tensor
 
-            ).numpy()[0]
+            )
 
 
 
         return self.state.build(
 
-            vector
+            output.numpy()[0]
 
         )
 
@@ -1937,20 +1919,20 @@ class FNAFEnvironment:
 
 
 
-    def step(self,action_id):
+
+    def step(self,action):
 
 
-        action=get_action(
+        command=get_action(
 
-            action_id
+            action
 
         )
-
 
 
         self.controller.execute(
 
-            action
+            command
 
         )
 
@@ -1968,7 +1950,7 @@ class FNAFEnvironment:
 
 
 
-        next_state=self.get_state(
+        next_state=self.make_state(
 
             frame
 
@@ -1993,11 +1975,14 @@ class FNAFEnvironment:
 
         )
 
-'@ | Set-Content `
-"$project\environment\env.py" `
--Encoding UTF8
+'@
 
 
+
+Set-Content `
+    -Path (Join-Path $project "environment\env.py") `
+    -Value $environment `
+    -Encoding UTF8
 
 
 
@@ -2005,44 +1990,18 @@ class FNAFEnvironment:
 
 Write-Host ""
 
-Write-Host "Entorno FNAF creado." `
--ForegroundColor Green
+Write-Host "Entorno FNAF creado correctamente." -ForegroundColor Green
 
+$graphs=@'
+from PyQt6.QtWidgets import QWidget,QVBoxLayout
 
-Write-Host ""
-
-Write-Host "Siguiente bloque: Dashboard neuronal avanzado + visualizacion CNN." `
--ForegroundColor Cyan
-
-# ============================================================
-# RedNeuronal FNAF 1
-# Bloque 4/5
-# Dashboard neuronal avanzado
-# ============================================================
+import pyqtgraph as pg
 
 
 
-# ============================================================
-# ui/vision_view.py
-# ============================================================
 
 
-@'
-import cv2
-
-from PyQt6.QtWidgets import QWidget
-
-from PyQt6.QtGui import (
-    QPainter,
-    QImage,
-    QPixmap
-)
-
-from PyQt6.QtCore import QTimer
-
-
-
-class VisionView(QWidget):
+class Graphs(QWidget):
 
 
     def __init__(self):
@@ -2050,130 +2009,87 @@ class VisionView(QWidget):
         super().__init__()
 
 
-        self.frame=None
+        layout=QVBoxLayout()
 
 
-        self.resize(
-            400,
-            250
+        self.graph=pg.PlotWidget()
+
+
+        self.graph.setTitle(
+
+            "Training Reward"
+
         )
 
 
-        self.timer=QTimer(self)
+        layout.addWidget(
 
+            self.graph
 
-        self.timer.timeout.connect(
-            self.update
         )
 
 
-        self.timer.start(
-            100
-        )
+        self.values=[]
 
 
+        self.setLayout(
 
-
-
-    def set_frame(self,frame):
-
-
-        self.frame=frame
-
-
-
-
-
-
-    def paintEvent(self,event):
-
-
-        painter=QPainter(
-            self
-        )
-
-
-        if self.frame is None:
-
-
-            return
-
-
-
-        rgb=cv2.cvtColor(
-
-            self.frame,
-
-            cv2.COLOR_BGR2RGB
+            layout
 
         )
 
 
 
-        h,w,c=rgb.shape
 
 
+    def update_value(self,value):
 
-        image=QImage(
 
-            rgb.data,
+        self.values.append(
 
-            w,
-
-            h,
-
-            w*c,
-
-            QImage.Format.Format_RGB888
+            value
 
         )
 
 
+        self.graph.clear()
 
-        painter.drawPixmap(
 
-            0,
+        self.graph.plot(
 
-            0,
+            self.values,
 
-            QPixmap.fromImage(
+            pen=pg.mkPen(
 
-                image
+                "green",
 
-            ).scaled(
-
-                self.width(),
-
-                self.height()
+                width=3
 
             )
 
         )
 
-'@ | Set-Content `
-"$project\ui\vision_view.py" `
--Encoding UTF8
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "ui\graphs.py") `
+    -Value $graphs `
+    -Encoding UTF8
 
 
 
 
 
 
-# ============================================================
-# ui/network_view.py
-# ============================================================
 
-
-@'
+$network=@'
 import math
 
 from PyQt6.QtWidgets import QWidget
 
-from PyQt6.QtGui import (
-    QPainter,
-    QColor,
-    QPen
-)
+from PyQt6.QtGui import QPainter,QColor,QPen
 
 from PyQt6.QtCore import QTimer
 
@@ -2186,37 +2102,27 @@ class NetworkView(QWidget):
 
     def __init__(self):
 
-
         super().__init__()
 
 
+        self.layers=[56,256,256,128,14]
+
+
+        self.time=0
+
+
+
         self.resize(
-            800,
+
+            900,
+
             450
+
         )
 
 
-        self.phase=0
 
-
-
-        self.layers=[
-
-            32,
-
-            256,
-
-            256,
-
-            128,
-
-            14
-
-        ]
-
-
-
-        self.timer=QTimer(self)
+        self.timer=QTimer()
 
 
         self.timer.timeout.connect(
@@ -2228,9 +2134,10 @@ class NetworkView(QWidget):
 
         self.timer.start(
 
-            50
+            40
 
         )
+
 
 
 
@@ -2239,7 +2146,7 @@ class NetworkView(QWidget):
     def animate(self):
 
 
-        self.phase+=0.15
+        self.time+=0.15
 
 
         self.update()
@@ -2267,45 +2174,40 @@ class NetworkView(QWidget):
 
 
 
-        positions=[]
+        spacing=self.width()/(len(self.layers)+1)
 
 
-        step=self.width()/(len(self.layers)+1)
 
-
+        nodes=[]
 
 
 
         for layer,size in enumerate(self.layers):
 
 
-            nodes=[]
+            layer_nodes=[]
 
 
             amount=min(
 
                 size,
 
-                20
+                18
 
             )
 
 
-            for n in range(amount):
+            for index in range(amount):
 
 
-                x=(layer+1)*step
+                x=(layer+1)*spacing
 
 
-                y=(self.height()/2)+(
-
-                    n-(amount/2)
-
-                )*20
+                y=40+(index*20)
 
 
 
-                nodes.append(
+                layer_nodes.append(
 
                     (
 
@@ -2318,17 +2220,15 @@ class NetworkView(QWidget):
                 )
 
 
-            positions.append(
 
-                nodes
+            nodes.append(
+
+                layer_nodes
 
             )
 
 
 
-
-
-        # conexiones
 
 
         painter.setPen(
@@ -2341,11 +2241,11 @@ class NetworkView(QWidget):
 
                     90,
 
-                    90,
+                    90
 
-                    100
+                ),
 
-                )
+                1
 
             )
 
@@ -2353,19 +2253,19 @@ class NetworkView(QWidget):
 
 
 
-        for a,b in zip(
+        for current,next_layer in zip(
 
-            positions[:-1],
+            nodes[:-1],
 
-            positions[1:]
+            nodes[1:]
 
         ):
 
 
-            for x1,y1 in a:
+            for x1,y1 in current:
 
 
-                for x2,y2 in b:
+                for x2,y2 in next_layer:
 
 
                     painter.drawLine(
@@ -2384,54 +2284,41 @@ class NetworkView(QWidget):
 
 
 
-        # neuronas
+
+        for layer in nodes:
 
 
-        for layer,nodes in enumerate(
-
-            positions
-
-        ):
-
-
-            for index,(x,y) in enumerate(nodes):
+            for x,y in layer:
 
 
                 pulse=(
 
                     math.sin(
 
-                        self.phase+index
+                        self.time+x
 
                     )
 
-                    +1
+                    +
 
-                )/2
+                    1
 
+                )*80
 
-
-                color=QColor(
-
-                    int(
-
-                        100+
-
-                        pulse*155
-
-                    ),
-
-                    80,
-
-                    255
-
-                )
 
 
 
                 painter.setBrush(
 
-                    color
+                    QColor(
+
+                        40,
+
+                        120+int(pulse),
+
+                        255
+
+                    )
 
                 )
 
@@ -2439,150 +2326,40 @@ class NetworkView(QWidget):
 
                 painter.drawEllipse(
 
-                    int(x-7),
+                    int(x-6),
 
-                    int(y-7),
+                    int(y-6),
 
-                    14,
+                    12,
 
-                    14
+                    12
 
                 )
 
-'@ | Set-Content `
-"$project\ui\network_view.py" `
--Encoding UTF8
+'@
 
 
 
+Set-Content `
+    -Path (Join-Path $project "ui\network_view.py") `
+    -Value $network `
+    -Encoding UTF8
 
 
 
 
-# ============================================================
-# ui/graphs.py
-# ============================================================
 
 
-@'
-from PyQt6.QtWidgets import QWidget,QVBoxLayout
 
-import pyqtgraph as pg
-
-
-
-
-
-class Graphs(QWidget):
-
-
-    def __init__(self):
-
-
-        super().__init__()
-
-
-
-        layout=QVBoxLayout()
-
-
-
-        self.graph=pg.PlotWidget()
-
-
-
-        self.graph.setTitle(
-
-            "Aprendizaje"
-
-        )
-
-
-        layout.addWidget(
-
-            self.graph
-
-        )
-
-
-
-        self.values=[]
-
-
-
-        self.setLayout(
-
-            layout
-
-        )
-
-
-
-
-
-
-    def add_value(self,value):
-
-
-        self.values.append(
-
-            value
-
-        )
-
-
-        self.graph.clear()
-
-
-
-        self.graph.plot(
-
-            self.values,
-
-            pen="green"
-
-        )
-
-'@ | Set-Content `
-"$project\ui\graphs.py" `
--Encoding UTF8
-
-
-
-
-
-
-
-# ============================================================
-# ui/dashboard.py
-# ============================================================
-
-
-@'
+$dashboard=@'
 import sys
 
-from PyQt6.QtWidgets import (
 
-    QApplication,
-
-    QWidget,
-
-    QVBoxLayout,
-
-    QLabel,
-
-    QHBoxLayout
-
-)
-
-
-from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication,QWidget,QVBoxLayout,QLabel
 
 
 
 from ui.network_view import NetworkView
-
-from ui.vision_view import VisionView
 
 from ui.graphs import Graphs
 
@@ -2595,27 +2372,24 @@ class Dashboard(QWidget):
 
     def __init__(self):
 
-
         super().__init__()
 
 
 
         self.setWindowTitle(
 
-            "RedNeuronal FNAF 1 - Cerebro"
+            "RedNeuronal FNAF 1"
 
         )
 
 
         self.resize(
 
-            1200,
+            1100,
 
-            900
+            750
 
         )
-
-
 
 
 
@@ -2623,38 +2397,15 @@ class Dashboard(QWidget):
 
 
 
-        self.info=QLabel(
+        self.status=QLabel(
 
-            "IA esperando..."
+            "Neural Network Online"
 
         )
 
-
-
-        top=QHBoxLayout()
-
-
-
-        self.vision=VisionView()
 
 
         self.network=NetworkView()
-
-
-
-        top.addWidget(
-
-            self.vision
-
-        )
-
-
-        top.addWidget(
-
-            self.network
-
-        )
-
 
 
 
@@ -2664,14 +2415,14 @@ class Dashboard(QWidget):
 
         layout.addWidget(
 
-            self.info
+            self.status
 
         )
 
 
-        layout.addLayout(
+        layout.addWidget(
 
-            top
+            self.network
 
         )
 
@@ -2689,38 +2440,6 @@ class Dashboard(QWidget):
             layout
 
         )
-
-
-
-        self.timer=QTimer(self)
-
-
-        self.timer.timeout.connect(
-
-            self.refresh
-
-        )
-
-
-        self.timer.start(
-
-            200
-
-        )
-
-
-
-
-
-    def refresh(self):
-
-
-        self.info.setText(
-
-            "Vision CNN  |  DQN activa  |  aprendiendo..."
-
-        )
-
 
 
 
@@ -2746,9 +2465,14 @@ class Dashboard(QWidget):
 
         )
 
-'@ | Set-Content `
-"$project\ui\dashboard.py" `
--Encoding UTF8
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "ui\dashboard.py") `
+    -Value $dashboard `
+    -Encoding UTF8
 
 
 
@@ -2756,38 +2480,10 @@ class Dashboard(QWidget):
 
 
 
-Write-Host ""
-
-Write-Host "Dashboard neuronal creado correctamente." `
--ForegroundColor Green
-
-
-Write-Host ""
-
-Write-Host "Siguiente bloque: Main final + modos train/play/collect." `
--ForegroundColor Cyan
-
-# ============================================================
-# RedNeuronal FNAF 1
-# Bloque 5/5
-# Main + Start final
-# ============================================================
-
-
-
-# ============================================================
-# main.py
-# ============================================================
-
-
-@'
+$main=@'
 import argparse
 
 import time
-
-import os
-
-import torch
 
 
 
@@ -2797,11 +2493,23 @@ from environment.env import FNAFEnvironment
 
 from environment.calibration import Calibration
 
-from environment.vision import Vision
-
-
-
 from ui.dashboard import Dashboard
+
+
+
+
+
+def calibrate():
+
+    Calibration().run()
+
+
+
+
+
+def dashboard():
+
+    Dashboard().run()
 
 
 
@@ -2809,82 +2517,26 @@ from ui.dashboard import Dashboard
 
 def collect():
 
-    print()
-
-    print("=== RECOLECTANDO EXPERIENCIA ===")
-
-
 
     env=FNAFEnvironment()
-
-    vision=Vision()
-
-
-
-    counter=0
-
-
-
-    os.makedirs(
-
-        "data/vision_memory",
-
-        exist_ok=True
-
-    )
-
 
 
     while True:
 
 
-        frame=vision.capture()
+        frame=env.vision.capture()
 
 
+        env.vision.save(
 
-        path=(
-
-            "data/vision_memory/"
-
-            +
-
-            str(counter)
-
-            +
-
-            ".png"
+            frame
 
         )
-
-
-
-        vision.save(
-
-            frame,
-
-            path
-
-        )
-
-
-
-        counter+=1
-
-
-
-        print(
-
-            "Captura:",
-
-            counter
-
-        )
-
 
 
         time.sleep(
 
-            0.2
+            0.5
 
         )
 
@@ -2895,12 +2547,6 @@ def collect():
 
 
 def train():
-
-
-    print()
-
-    print("=== ENTRENAMIENTO ===")
-
 
 
     env=FNAFEnvironment()
@@ -2920,13 +2566,10 @@ def train():
         episode+=1
 
 
-
         state=env.reset()
 
 
-
         done=False
-
 
 
         reward_total=0
@@ -2936,7 +2579,6 @@ def train():
 
 
         while not done:
-
 
 
             action=agent.act(
@@ -2978,9 +2620,7 @@ def train():
             state=next_state
 
 
-
             reward_total+=reward
-
 
 
 
@@ -2991,11 +2631,11 @@ def train():
 
         print(
 
-            "Episodio",
+            "Episode:",
 
             episode,
 
-            "Reward",
+            "Reward:",
 
             reward_total
 
@@ -3007,184 +2647,103 @@ def train():
 
 
 
-
-
 def play():
-
-
-    print()
-
-    print("=== MODO JUEGO ===")
-
 
 
     env=FNAFEnvironment()
 
 
-
     agent=Agent()
-
-
-    agent.load()
-
-
-
-    state=env.reset()
-
-
 
 
 
     while True:
 
 
+        state=env.reset()
 
-        action=agent.act(
 
-            state,
-
-            False
-
-        )
+        done=False
 
 
 
-        state,reward,done=env.step(
-
-            action
-
-        )
+        while not done:
 
 
+            action=agent.act(
 
-        if done:
+                state,
 
-
-            print(
-
-                "Partida terminada"
+                False
 
             )
 
 
-            state=env.reset()
+            state,_,done=env.step(
 
+                action
 
+            )
 
 
 
 
 
-def calibrate():
 
+parser=argparse.ArgumentParser()
 
-    Calibration().run()
 
+parser.add_argument(
 
+    "--mode"
 
+)
 
 
+args=parser.parse_args()
 
 
-def dashboard():
 
+if args.mode=="dashboard":
 
-    Dashboard().run()
+    dashboard()
 
 
+elif args.mode=="calibrate":
 
+    calibrate()
 
 
+elif args.mode=="collect":
 
+    collect()
 
-def main():
 
+elif args.mode=="train":
 
-    parser=argparse.ArgumentParser()
+    train()
 
 
+elif args.mode=="play":
 
-    parser.add_argument(
+    play()
 
-        "--mode",
+'@
 
-        required=True
 
-    )
 
+Set-Content `
+    -Path (Join-Path $project "main.py") `
+    -Value $main `
+    -Encoding UTF8
 
 
-    args=parser.parse_args()
 
 
 
-    modes={
 
 
-        "collect":collect,
-
-
-        "train":train,
-
-
-        "play":play,
-
-
-        "dashboard":dashboard,
-
-
-        "calibrate":calibrate
-
-
-    }
-
-
-
-
-
-    if args.mode in modes:
-
-
-        modes[args.mode]()
-
-
-
-    else:
-
-
-        print(
-
-            "Modo incorrecto"
-
-        )
-
-
-
-
-
-
-
-if __name__=="__main__":
-
-
-    main()
-
-'@ | Set-Content `
-"$project\main.py" `
--Encoding UTF8
-
-
-
-
-
-
-
-# ============================================================
-# start.ps1
-# ============================================================
-
-
-@'
+$start=@'
 param(
 
 [string]$mode="dashboard"
@@ -3193,60 +2752,34 @@ param(
 
 
 
+$python="venv\Scripts\python.exe"
+
+
+
+& $python main.py --mode $mode
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "start.ps1") `
+    -Value $start `
+    -Encoding UTF8
+
+
+
+
+
+
+
+$launcher=@'
 Write-Host ""
 
-Write-Host "===================================" -ForegroundColor Cyan
+Write-Host "================================"
 
 Write-Host " RedNeuronal FNAF 1 "
 
-Write-Host " Modo:" $mode
-
-Write-Host "===================================" -ForegroundColor Cyan
-
-
-
-if(!(Test-Path "venv\Scripts\python.exe")){
-
-
-    Write-Host ""
-
-    Write-Host "No existe entorno virtual." -ForegroundColor Red
-
-    Write-Host "Ejecuta primero el instalador."
-
-    exit
-
-}
-
-
-
-
-
-.\venv\Scripts\activate
-
-
-
-python main.py --mode $mode
-
-'@ | Set-Content `
-"$project\start.ps1" `
--Encoding UTF8
-
-
-
-
-
-
-
-# ============================================================
-# Crear acceso rapido launcher.ps1
-# ============================================================
-
-
-@'
-Write-Host ""
-
-Write-Host "RedNeuronal FNAF 1"
+Write-Host "================================"
 
 Write-Host ""
 
@@ -3254,9 +2787,9 @@ Write-Host "1 - Dashboard"
 
 Write-Host "2 - Calibrar"
 
-Write-Host "3 - Recolectar"
+Write-Host "3 - Capturar datos"
 
-Write-Host "4 - Entrenar"
+Write-Host "4 - Entrenar IA"
 
 Write-Host "5 - Jugar"
 
@@ -3264,7 +2797,7 @@ Write-Host ""
 
 
 
-$option=Read-Host "Seleccion"
+$option=Read-Host "Selecciona"
 
 
 
@@ -3281,37 +2814,34 @@ switch($option){
 
 5 {.\start.ps1 play}
 
-
 }
-
-'@ | Set-Content `
-"$project\launcher.ps1" `
--Encoding UTF8
+'@
 
 
 
+Set-Content `
+    -Path (Join-Path $project "launcher.ps1") `
+    -Value $launcher `
+    -Encoding UTF8
 
 
 
-Write-Host ""
-
-Write-Host "======================================" `
--ForegroundColor Green
 
 
-Write-Host " Proyecto completo creado "
+
 
 Write-Host ""
 
-Write-Host "Ejecuta:"
+Write-Host "====================================" -ForegroundColor Green
+
+Write-Host " RedNeuronal FNAF 1 instalado "
+
+Write-Host "====================================" -ForegroundColor Green
 
 Write-Host ""
+
+Write-Host "Ejecuta:" -ForegroundColor Cyan
+
+Write-Host "cd $project"
 
 Write-Host ".\launcher.ps1"
-
-Write-Host ""
-
-Write-Host "para iniciar la IA."
-
-Write-Host "======================================" `
--ForegroundColor Green
