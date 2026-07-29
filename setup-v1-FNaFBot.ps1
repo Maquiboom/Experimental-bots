@@ -1,58 +1,63 @@
-$project = Join-Path `
-    (Get-Location).Path `
-    "RedNeuronal-FNAF1"
+$root = Get-Location
+
+$project = Join-Path $root "RedNeuronal-FNAF1"
 
 
 Write-Host ""
-
 Write-Host "====================================" -ForegroundColor Cyan
-Write-Host " RedNeuronal FNAF 1 Installer " -ForegroundColor Cyan
+Write-Host " RedNeuronal FNAF 1 " -ForegroundColor Cyan
 Write-Host "====================================" -ForegroundColor Cyan
-
 Write-Host ""
 
 
 
 if(Test-Path $project){
 
+
     Write-Host "Proyecto existente encontrado." -ForegroundColor Yellow
 
 
-    $oldModel = Join-Path `
-        $project `
-        "models\checkpoint.pt"
+    $backup = Join-Path $root "FNAF_Backup"
+
+
+    New-Item -ItemType Directory -Path $backup -Force | Out-Null
 
 
 
-    if(Test-Path $oldModel){
+    $filesToBackup = @(
 
+        "models\model.pt",
 
-        $backup = Join-Path `
-            (Get-Location).Path `
-            "FNAF_checkpoint_backup.pt"
+        "models\checkpoint.pt",
 
+        "config\calibration.json"
 
-
-        Copy-Item `
-            $oldModel `
-            $backup `
-            -Force
+    )
 
 
 
-        Write-Host "Checkpoint guardado:" -ForegroundColor Green
+    foreach($file in $filesToBackup){
 
-        Write-Host $backup
+
+        $source = Join-Path $project $file
+
+
+
+        if(Test-Path $source){
+
+
+            Copy-Item $source $backup -Force
+
+
+            Write-Host "Backup:" $file -ForegroundColor Green
+
+        }
 
     }
 
 
 
-    Remove-Item `
-        $project `
-        -Recurse `
-        -Force
-
+    Remove-Item $project -Recurse -Force
 
 
     Write-Host "Proyecto anterior eliminado." -ForegroundColor Green
@@ -63,49 +68,48 @@ if(Test-Path $project){
 
 
 
-New-Item `
-    -ItemType Directory `
-    -Path $project `
-    -Force | Out-Null
+New-Item -ItemType Directory -Path $project -Force | Out-Null
 
 
 
 
+$folders = @(
 
-$folders=@(
+"ai",
 
-    "ai",
+"environment",
 
-    "environment",
+"dashboard",
 
-    "ui",
+"ui",
 
-    "config",
+"config",
 
-    "models",
+"models",
 
-    "logs",
+"logs",
 
-    "data",
+"data",
 
-    "data\vision_memory"
+"data\screenshots",
+
+"data\templates",
+
+"data\templates\animatronics",
+
+"data\templates\states"
 
 )
-
-
 
 
 
 foreach($folder in $folders){
 
 
-    New-Item `
+    $path = Join-Path $project $folder
 
-        -ItemType Directory `
 
-        -Path (Join-Path $project $folder) `
-
-        -Force | Out-Null
+    New-Item -ItemType Directory -Path $path -Force | Out-Null
 
 }
 
@@ -113,15 +117,7 @@ foreach($folder in $folders){
 
 
 
-Write-Host ""
-
-Write-Host "Estructura creada." -ForegroundColor Green
-
-
-
-
-
-$requirements=@'
+$requirements = @'
 torch
 torchvision
 opencv-python
@@ -131,37 +127,36 @@ pillow
 pyqt6
 pyqtgraph
 matplotlib
+keyboard
+mouse
+psutil
 '@
 
 
 
-
-
 Set-Content `
-
     -Path (Join-Path $project "requirements.txt") `
-
     -Value $requirements `
-
     -Encoding UTF8
 
 
 
 
 
-$initFiles=@(
 
-    "ai\__init__.py",
+$initFiles = @(
 
-    "environment\__init__.py",
+"ai\__init__.py",
 
-    "ui\__init__.py",
+"environment\__init__.py",
 
-    "config\__init__.py"
+"dashboard\__init__.py",
+
+"ui\__init__.py",
+
+"config\__init__.py"
 
 )
-
-
 
 
 
@@ -169,11 +164,8 @@ foreach($file in $initFiles){
 
 
     New-Item `
-
         -ItemType File `
-
         -Path (Join-Path $project $file) `
-
         -Force | Out-Null
 
 }
@@ -182,24 +174,21 @@ foreach($file in $initFiles){
 
 
 
-$config=@'
+
+$config = @'
 import os
+import json
 
 
-
-BASE_DIR=os.path.dirname(
-
+BASE_DIR = os.path.dirname(
     os.path.dirname(
-
         os.path.abspath(__file__)
-
     )
-
 )
 
 
 
-MODEL_PATH=os.path.join(
+MODEL_PATH = os.path.join(
 
     BASE_DIR,
 
@@ -211,86 +200,148 @@ MODEL_PATH=os.path.join(
 
 
 
-SCREENSHOT_PATH=os.path.join(
+LOG_PATH = os.path.join(
 
     BASE_DIR,
 
-    "data",
-
-    "vision_memory"
+    "logs"
 
 )
 
 
 
-STATE_SIZE=56
+SCREENSHOT_PATH = os.path.join(
 
+    BASE_DIR,
 
-ACTION_SIZE=14
+    "data",
 
+    "screenshots"
 
-
-LEARNING_RATE=0.0005
-
-
-GAMMA=0.95
-
-
-
-MEMORY_SIZE=50000
-
-
-BATCH_SIZE=64
+)
 
 
 
-EPSILON_START=1.0
+TEMPLATE_PATH = os.path.join(
 
+    BASE_DIR,
 
-EPSILON_END=0.05
+    "data",
 
+    "templates"
 
-EPSILON_DECAY=0.995
-
-
-
-TARGET_UPDATE=500
+)
 
 
 
-IMAGE_SIZE=224
+CALIBRATION_PATH = os.path.join(
 
+    BASE_DIR,
+
+    "config",
+
+    "calibration.json"
+
+)
+
+
+
+STATE_SIZE = 64
+
+
+ACTION_SIZE = 12
+
+
+
+LEARNING_RATE = 0.0005
+
+
+GAMMA = 0.95
+
+
+
+MEMORY_SIZE = 100000
+
+
+BATCH_SIZE = 64
+
+
+
+EPSILON_START = 1.0
+
+
+EPSILON_END = 0.05
+
+
+EPSILON_DECAY = 0.995
+
+
+
+TARGET_UPDATE = 500
+
+
+
+IMAGE_SIZE = 224
 '@
 
 
 
-
-
 Set-Content `
-
     -Path (Join-Path $project "config\config.py") `
-
     -Value $config `
-
     -Encoding UTF8
 
 
 
 
 
-Write-Host ""
 
+$settings = @'
+{
+    "project": "RedNeuronal-FNAF1",
+    "version": "2.0",
+    "dashboard": true,
+    "vision": true,
+    "training": true
+}
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "config\settings.json") `
+    -Value $settings `
+    -Encoding UTF8
+
+
+
+
+
+
+$calibration = @'
+{
+
+}
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "config\calibration.json") `
+    -Value $calibration `
+    -Encoding UTF8
+
+
+
+
+
+
+Write-Host ""
 Write-Host "Creando entorno virtual..." -ForegroundColor Cyan
 
 
 
-
-
-$venv = Join-Path `
-    $project `
-    "venv"
-
-
+$venv = Join-Path $project "venv"
 
 
 
@@ -299,19 +350,14 @@ python -m venv $venv
 
 
 
-
-$python = Join-Path `
-    $venv `
-    "Scripts\python.exe"
-
-
+$python = Join-Path $venv "Scripts\python.exe"
 
 
 
 if(!(Test-Path $python)){
 
 
-    Write-Host "No se pudo crear Python virtual." -ForegroundColor Red
+    Write-Host "Error creando entorno Python." -ForegroundColor Red
 
     exit
 
@@ -321,11 +367,8 @@ if(!(Test-Path $python)){
 
 
 
-Write-Host ""
 
 Write-Host "Instalando dependencias..." -ForegroundColor Cyan
-
-
 
 
 
@@ -333,23 +376,23 @@ Write-Host "Instalando dependencias..." -ForegroundColor Cyan
 
 
 
+& $python -m pip install -r (Join-Path $project "requirements.txt")
 
-
-& $python -m pip install `
-
-    -r (Join-Path $project "requirements.txt")
 
 
 
 
 
 Write-Host ""
+Write-Host "Base preparada correctamente." -ForegroundColor Green
+Write-Host ""
 
-Write-Host "Base del proyecto creada." -ForegroundColor Green
+Write-Host "Proyecto creado en:" -ForegroundColor Cyan
 
-$model=@'
+Write-Host $project
+
+$model = @'
 import torch
-
 import torch.nn as nn
 
 
@@ -367,15 +410,18 @@ class FNAFNetwork(nn.Module):
         super().__init__()
 
 
-        self.layers=nn.Sequential(
+
+        self.network = nn.Sequential(
+
 
             nn.Linear(
 
                 STATE_SIZE,
 
-                256
+                512
 
             ),
+
 
             nn.ReLU(),
 
@@ -383,11 +429,12 @@ class FNAFNetwork(nn.Module):
 
             nn.Linear(
 
-                256,
+                512,
 
                 256
 
             ),
+
 
             nn.ReLU(),
 
@@ -401,6 +448,7 @@ class FNAFNetwork(nn.Module):
 
             ),
 
+
             nn.ReLU(),
 
 
@@ -413,6 +461,7 @@ class FNAFNetwork(nn.Module):
 
             )
 
+
         )
 
 
@@ -421,7 +470,7 @@ class FNAFNetwork(nn.Module):
 
     def forward(self,x):
 
-        return self.layers(x)
+        return self.network(x)
 
 '@
 
@@ -438,22 +487,20 @@ Set-Content `
 
 
 
-$visionNet=@'
+$visionModel = @'
 import torch
-
 import torch.nn as nn
 
 
-from config.config import IMAGE_SIZE
 
 
 
+class VisionEncoder(nn.Module):
 
-
-class VisionNetwork(nn.Module):
 
 
     def __init__(self):
+
 
         super().__init__()
 
@@ -461,33 +508,19 @@ class VisionNetwork(nn.Module):
 
         self.features=nn.Sequential(
 
+
             nn.Conv2d(
 
                 3,
 
-                16,
-
-                5,
-
-                stride=2
-
-            ),
-
-            nn.ReLU(),
-
-
-
-            nn.Conv2d(
-
-                16,
-
                 32,
 
-                5,
+                3,
 
                 stride=2
 
             ),
+
 
             nn.ReLU(),
 
@@ -499,57 +532,34 @@ class VisionNetwork(nn.Module):
 
                 64,
 
-                5,
+                3,
 
                 stride=2
 
             ),
-
-            nn.ReLU()
-
-        )
-
-
-
-
-        self.pool=nn.AdaptiveAvgPool2d(
-
-            (4,4)
-
-        )
-
-
-
-
-        self.output=nn.Sequential(
-
-            nn.Flatten(),
-
-
-
-            nn.Linear(
-
-                64*4*4,
-
-                128
-
-            ),
-
 
 
             nn.ReLU(),
 
 
 
-            nn.Linear(
+            nn.Conv2d(
+
+                64,
 
                 128,
 
-                32
+                3,
 
-            )
+                stride=2
+
+            ),
+
+
+            nn.ReLU()
 
         )
+
 
 
 
@@ -561,18 +571,21 @@ class VisionNetwork(nn.Module):
         x=self.features(x)
 
 
-        x=self.pool(x)
 
+        return torch.flatten(
 
-        return self.output(x)
+            x,
 
+            1
+
+        )
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "ai\vision_net.py") `
-    -Value $visionNet `
+    -Path (Join-Path $project "ai\vision_model.py") `
+    -Value $visionModel `
     -Encoding UTF8
 
 
@@ -581,7 +594,7 @@ Set-Content `
 
 
 
-$memory=@'
+$replay = @'
 import random
 
 from collections import deque
@@ -607,12 +620,14 @@ class ReplayMemory:
 
 
 
-    def add(self,item):
+
+
+    def add(self,experience):
 
 
         self.memory.append(
 
-            item
+            experience
 
         )
 
@@ -620,16 +635,19 @@ class ReplayMemory:
 
 
 
-    def sample(self,size):
+
+
+    def sample(self,batch):
 
 
         return random.sample(
 
             self.memory,
 
-            size
+            batch
 
         )
+
 
 
 
@@ -643,14 +661,13 @@ class ReplayMemory:
             self.memory
 
         )
-
 '@
 
 
 
 Set-Content `
     -Path (Join-Path $project "ai\replay.py") `
-    -Value $memory `
+    -Value $replay `
     -Encoding UTF8
 
 
@@ -659,9 +676,177 @@ Set-Content `
 
 
 
-$agent=@'
+$checkpoint = @'
 import os
 
+import torch
+
+
+
+
+
+def save_checkpoint(
+
+    path,
+
+    agent
+
+):
+
+
+
+    os.makedirs(
+
+        os.path.dirname(path),
+
+        exist_ok=True
+
+    )
+
+
+
+    torch.save(
+
+        {
+
+        "model":agent.model.state_dict(),
+
+        "target":agent.target.state_dict(),
+
+        "optimizer":agent.optimizer.state_dict(),
+
+        "epsilon":agent.epsilon,
+
+        "steps":agent.steps,
+
+        "episodes":agent.episodes,
+
+        "reward_history":agent.reward_history
+
+        },
+
+        path
+
+    )
+
+
+
+
+
+
+
+
+def load_checkpoint(
+
+    path,
+
+    agent
+
+):
+
+
+
+    if not os.path.exists(path):
+
+
+        return False
+
+
+
+
+
+
+    data=torch.load(
+
+        path,
+
+        map_location=agent.device
+
+    )
+
+
+
+    agent.model.load_state_dict(
+
+        data["model"]
+
+    )
+
+
+
+    agent.target.load_state_dict(
+
+        data["target"]
+
+    )
+
+
+
+    agent.optimizer.load_state_dict(
+
+        data["optimizer"]
+
+    )
+
+
+
+    agent.epsilon=data.get(
+
+        "epsilon",
+
+        1.0
+
+    )
+
+
+
+    agent.steps=data.get(
+
+        "steps",
+
+        0
+
+    )
+
+
+
+    agent.episodes=data.get(
+
+        "episodes",
+
+        0
+
+    )
+
+
+
+    agent.reward_history=data.get(
+
+        "reward_history",
+
+        []
+
+    )
+
+
+
+    return True
+'@
+
+
+
+Set-Content `
+    -Path (Join-Path $project "ai\checkpoint.py") `
+    -Value $checkpoint `
+    -Encoding UTF8
+
+
+
+
+
+
+
+$agent = @'
 import random
 
 
@@ -677,9 +862,12 @@ from ai.model import FNAFNetwork
 
 from ai.replay import ReplayMemory
 
+from ai.checkpoint import save_checkpoint,load_checkpoint
+
 
 
 from config.config import *
+
 
 
 
@@ -690,6 +878,7 @@ class Agent:
 
 
     def __init__(self):
+
 
 
         self.device=torch.device(
@@ -722,6 +911,14 @@ class Agent:
 
 
 
+        self.target.load_state_dict(
+
+            self.model.state_dict()
+
+        )
+
+
+
         self.optimizer=optim.Adam(
 
             self.model.parameters(),
@@ -732,7 +929,7 @@ class Agent:
 
 
 
-        self.loss_function=nn.MSELoss()
+        self.loss_fn=nn.MSELoss()
 
 
 
@@ -747,18 +944,44 @@ class Agent:
         self.epsilon=EPSILON_START
 
 
+
         self.steps=0
 
 
-
-        self.load()
-
+        self.episodes=0
 
 
+        self.reward_history=[]
+
+
+        self.loss_value=0
 
 
 
-    def act(self,state,explore=True):
+        load_checkpoint(
+
+            MODEL_PATH,
+
+            self
+
+        )
+
+
+
+
+
+
+
+    def act(
+
+        self,
+
+        state,
+
+        explore=True
+
+    ):
+
 
 
         if explore and random.random()<self.epsilon:
@@ -769,6 +992,8 @@ class Agent:
                 ACTION_SIZE
 
             )
+
+
 
 
 
@@ -787,7 +1012,7 @@ class Agent:
         with torch.no_grad():
 
 
-            output=self.model(
+            values=self.model(
 
                 state
 
@@ -797,9 +1022,11 @@ class Agent:
 
         return torch.argmax(
 
-            output
+            values
 
         ).item()
+
+
 
 
 
@@ -827,15 +1054,15 @@ class Agent:
 
             (
 
-                state,
+            state,
 
-                action,
+            action,
 
-                reward,
+            reward,
 
-                next_state,
+            next_state,
 
-                done
+            done
 
             )
 
@@ -853,7 +1080,11 @@ class Agent:
 
         if len(self.memory)<BATCH_SIZE:
 
+
             return
+
+
+
 
 
 
@@ -865,35 +1096,11 @@ class Agent:
 
 
 
-        states=[]
+        states,actions,rewards,next_states,dones=zip(
 
-        actions=[]
+            *batch
 
-        rewards=[]
-
-        next_states=[]
-
-        dones=[]
-
-
-
-
-        for item in batch:
-
-
-            s,a,r,n,d=item
-
-
-            states.append(s)
-
-            actions.append(a)
-
-            rewards.append(r)
-
-            next_states.append(n)
-
-            dones.append(d)
-
+        )
 
 
 
@@ -961,6 +1168,7 @@ class Agent:
 
 
 
+
         current=self.model(
 
             states
@@ -977,6 +1185,7 @@ class Agent:
 
 
 
+
         with torch.no_grad():
 
 
@@ -984,11 +1193,7 @@ class Agent:
 
                 next_states
 
-            ).max(
-
-                1
-
-            )[0]
+            ).max(1)[0]
 
 
 
@@ -1006,7 +1211,9 @@ class Agent:
 
 
 
-        loss=self.loss_function(
+
+
+        loss=self.loss_fn(
 
             current,
 
@@ -1016,19 +1223,24 @@ class Agent:
 
 
 
-
-
         self.optimizer.zero_grad()
 
 
+
         loss.backward()
+
 
 
         self.optimizer.step()
 
 
 
+        self.loss_value=loss.item()
+
+
+
         self.steps+=1
+
 
 
 
@@ -1039,6 +1251,8 @@ class Agent:
             self.epsilon*EPSILON_DECAY
 
         )
+
+
 
 
 
@@ -1057,108 +1271,16 @@ class Agent:
 
 
 
-
     def save(self):
 
 
-        torch.save(
-
-            {
-
-            "model":self.model.state_dict(),
-
-            "target":self.target.state_dict(),
-
-            "optimizer":self.optimizer.state_dict(),
-
-            "epsilon":self.epsilon,
-
-            "steps":self.steps
-
-            },
-
-            MODEL_PATH
-
-        )
-
-
-
-
-
-
-    def load(self):
-
-
-        if not os.path.exists(
-
-            MODEL_PATH
-
-        ):
-
-            self.target.load_state_dict(
-
-                self.model.state_dict()
-
-            )
-
-            return
-
-
-
-
-
-        checkpoint=torch.load(
+        save_checkpoint(
 
             MODEL_PATH,
 
-            map_location=self.device
+            self
 
         )
-
-
-
-        self.model.load_state_dict(
-
-            checkpoint["model"]
-
-        )
-
-
-
-        self.target.load_state_dict(
-
-            checkpoint["target"]
-
-        )
-
-
-
-        self.optimizer.load_state_dict(
-
-            checkpoint["optimizer"]
-
-        )
-
-
-
-        self.epsilon=checkpoint.get(
-
-            "epsilon",
-
-            EPSILON_START
-
-        )
-
-
-
-        self.steps=checkpoint.get(
-
-            "steps",
-
-            0
-
-        )
-
 
 '@
 
@@ -1173,69 +1295,147 @@ Set-Content `
 
 
 
-Write-Host ""
 
-Write-Host "IA creada correctamente." -ForegroundColor Green
 
-$actions=@'
-ACTIONS=[
-
-    "open_monitor",
-
-    "close_monitor",
-
-    "camera_left",
-
-    "camera_right",
-
-    "camera_cycle",
-
-    "left_light",
-
-    "left_door",
-
-    "right_light",
-
-    "right_door",
-
-    "wait",
-
-    "action_10",
-
-    "action_11",
-
-    "action_12",
-
-    "action_13"
-
-]
+$trainer = @'
+import time
 
 
 
 
 
-def get_action(index):
+class Trainer:
 
 
-    if index < 0:
 
-        return None
-
-
-    if index >= len(ACTIONS):
-
-        return None
+    def __init__(self,agent,env):
 
 
-    return ACTIONS[index]
+        self.agent=agent
 
+        self.env=env
+
+
+
+
+
+
+    def run(self):
+
+
+        while True:
+
+
+
+            state=self.env.reset()
+
+
+
+            done=False
+
+
+            reward_total=0
+
+
+
+
+
+            while not done:
+
+
+
+                action=self.agent.act(
+
+                    state
+
+                )
+
+
+
+                next_state,reward,done=self.env.step(
+
+                    action
+
+                )
+
+
+
+                self.agent.remember(
+
+                    state,
+
+                    action,
+
+                    reward,
+
+                    next_state,
+
+                    done
+
+                )
+
+
+
+                self.agent.learn()
+
+
+
+                state=next_state
+
+
+
+                reward_total+=reward
+
+
+
+
+
+            self.agent.episodes+=1
+
+
+
+            self.agent.reward_history.append(
+
+                reward_total
+
+            )
+
+
+
+            self.agent.save()
+
+
+
+            print(
+
+                "Episode:",
+
+                self.agent.episodes,
+
+                "Reward:",
+
+                reward_total,
+
+                "Loss:",
+
+                self.agent.loss_value
+
+            )
+
+
+
+            time.sleep(
+
+                0.2
+
+            )
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "environment\actions.py") `
-    -Value $actions `
+    -Path (Join-Path $project "ai\trainer.py") `
+    -Value $trainer `
     -Encoding UTF8
 
 
@@ -1244,20 +1444,27 @@ Set-Content `
 
 
 
-$vision=@'
+Write-Host ""
+
+Write-Host "Sistema IA creado correctamente." -ForegroundColor Green
+
+
+$vision = @'
+import os
+
+import time
+
+
 import cv2
 
 import numpy as np
 
 import pyautogui
 
-import os
-
-import time
 
 
+from config.config import SCREENSHOT_PATH
 
-from config.config import IMAGE_SIZE,SCREENSHOT_PATH
 
 
 
@@ -1270,14 +1477,10 @@ class Vision:
     def __init__(self):
 
 
-        self.size=(
+        self.last_frame=None
 
-            IMAGE_SIZE,
 
-            IMAGE_SIZE
-
-        )
-
+        self.frame_count=0
 
 
 
@@ -1309,6 +1512,13 @@ class Vision:
 
 
 
+        self.last_frame=frame
+
+
+        self.frame_count+=1
+
+
+
         return frame
 
 
@@ -1316,48 +1526,18 @@ class Vision:
 
 
 
-    def process(self,frame):
+    def resize(self,frame,size=224):
 
 
-        frame=cv2.resize(
-
-            frame,
-
-            self.size
-
-        )
-
-
-
-        frame=cv2.cvtColor(
-
-            frame,
-
-            cv2.COLOR_BGR2RGB
-
-        )
-
-
-
-        frame=frame.astype(
-
-            np.float32
-
-        )/255.0
-
-
-
-        frame=np.transpose(
+        return cv2.resize(
 
             frame,
 
             (
 
-                2,
+            size,
 
-                0,
-
-                1
+            size
 
             )
 
@@ -1365,7 +1545,70 @@ class Vision:
 
 
 
-        return frame
+
+
+
+
+    def normalize(self,frame):
+
+
+        image=frame.astype(
+
+            np.float32
+
+        )
+
+
+
+        image/=255.0
+
+
+
+        return image
+
+
+
+
+
+
+    def prepare_tensor(self,frame):
+
+
+        image=self.resize(
+
+            frame
+
+        )
+
+
+
+        image=self.normalize(
+
+            image
+
+        )
+
+
+
+        image=np.transpose(
+
+            image,
+
+            (
+
+            2,
+
+            0,
+
+            1
+
+            )
+
+        )
+
+
+
+        return image
 
 
 
@@ -1391,7 +1634,7 @@ class Vision:
 
             str(
 
-                int(time.time()*1000)
+                int(time.time())
 
             )+".png"
 
@@ -1406,15 +1649,14 @@ class Vision:
             frame
 
         )
-
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "environment\vision.py") `
-    -Value $vision `
-    -Encoding UTF8
+-Path (Join-Path $project "environment\vision.py") `
+-Value $vision `
+-Encoding UTF8
 
 
 
@@ -1422,30 +1664,28 @@ Set-Content `
 
 
 
-$controller=@'
-import json
-
+$templateManager = @'
 import os
 
-import time
-
-import pyautogui
+import cv2
 
 
 
 
 
-class Controller:
+
+class TemplateManager:
 
 
 
-    def __init__(self):
+    def __init__(self,path):
 
 
-        self.path="config/calibration.json"
+        self.path=path
 
 
-        self.points={}
+        self.templates={}
+
 
 
         self.load()
@@ -1458,27 +1698,555 @@ class Controller:
     def load(self):
 
 
-        if os.path.exists(
+        if not os.path.exists(
 
             self.path
 
         ):
 
 
+            return
+
+
+
+
+
+
+        for root,dirs,files in os.walk(
+
+            self.path
+
+        ):
+
+
+
+            for file in files:
+
+
+
+                if file.lower().endswith(
+
+                    ".png"
+
+                ):
+
+
+
+                    full=os.path.join(
+
+                        root,
+
+                        file
+
+                    )
+
+
+
+                    image=cv2.imread(
+
+                        full,
+
+                        0
+
+                    )
+
+
+
+                    if image is not None:
+
+
+                        self.templates[file]=image
+
+
+
+
+
+
+
+    def add(self,name,image):
+
+
+        self.templates[name]=image
+
+
+
+
+
+
+
+    def get_all(self):
+
+
+        return self.templates
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "environment\template_manager.py") `
+-Value $templateManager `
+-Encoding UTF8
+
+
+
+
+
+
+
+$detector = @'
+import cv2
+
+import numpy as np
+
+
+
+
+
+class Detector:
+
+
+
+    def __init__(self,manager):
+
+
+        self.manager=manager
+
+
+
+
+
+
+    def detect(self,frame):
+
+
+        results={}
+
+
+
+        gray=cv2.cvtColor(
+
+            frame,
+
+            cv2.COLOR_BGR2GRAY
+
+        )
+
+
+
+
+
+        for name,template in self.manager.get_all().items():
+
+
+
+            try:
+
+
+
+                match=cv2.matchTemplate(
+
+                    gray,
+
+                    template,
+
+                    cv2.TM_CCOEFF_NORMED
+
+                )
+
+
+
+                value=float(
+
+                    np.max(match)
+
+                )
+
+
+
+                location=np.unravel_index(
+
+                    np.argmax(match),
+
+                    match.shape
+
+                )
+
+
+
+                if value>=0.70:
+
+
+                    results[name]={
+
+
+                    "confidence":value,
+
+
+                    "position":location
+
+
+                    }
+
+
+
+            except Exception:
+
+
+
+                pass
+
+
+
+
+
+        return results
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "environment\detector.py") `
+-Value $detector `
+-Encoding UTF8
+
+
+
+
+
+
+
+$state = @'
+import numpy as np
+
+
+
+
+
+class GameState:
+
+
+
+    def __init__(self):
+
+
+        self.last={}
+
+
+
+
+
+
+    def build(self,detections):
+
+
+        state=np.zeros(
+
+            64,
+
+            dtype=np.float32
+
+        )
+
+
+
+        index=0
+
+
+
+
+
+        for name,data in detections.items():
+
+
+
+            confidence=data["confidence"]
+
+
+
+            name=name.lower()
+
+
+
+
+
+            if "bonnie" in name:
+
+
+                state[0]=confidence
+
+
+
+
+            elif "chica" in name:
+
+
+                state[1]=confidence
+
+
+
+
+            elif "foxy" in name:
+
+
+                state[2]=confidence
+
+
+
+
+            elif "freddy" in name:
+
+
+                state[3]=confidence
+
+
+
+
+
+
+
+            if index+10 < len(state):
+
+
+                state[index+10]=confidence
+
+
+
+            index+=1
+
+
+
+
+
+        self.last=state
+
+
+
+        return state
+
+
+
+
+
+
+
+    def summary(self):
+
+
+        active=[]
+
+
+
+        for i,value in enumerate(self.last):
+
+
+            if value>0:
+
+
+                active.append(
+
+                    (
+
+                    i,
+
+                    float(value)
+
+                    )
+
+                )
+
+
+
+        return active
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "environment\state.py") `
+-Value $state `
+-Encoding UTF8
+
+
+
+
+
+
+
+$visionMonitor = @'
+class VisionMonitor:
+
+
+
+    def __init__(self):
+
+
+        self.objects={}
+
+
+        self.frame=None
+
+
+
+
+
+    def update(self,frame,objects):
+
+
+        self.frame=frame
+
+
+        self.objects=objects
+
+
+
+
+
+
+    def get_objects(self):
+
+
+        return self.objects
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "environment\vision_monitor.py") `
+-Value $visionMonitor `
+-Encoding UTF8
+
+
+
+
+
+
+
+Write-Host ""
+
+Write-Host "Sistema de vision creado correctamente." -ForegroundColor Green
+
+
+$actions = @'
+ACTIONS=[
+
+    "open_monitor",
+
+    "camera_1a",
+
+    "camera_1b",
+
+    "camera_2a",
+
+    "camera_2b",
+
+    "camera_3",
+
+    "camera_4a",
+
+    "camera_4b",
+
+    "left_light",
+
+    "left_door",
+
+    "right_light",
+
+    "right_door"
+
+]
+
+
+
+
+def get_action(index):
+
+
+    if index < 0:
+
+        return None
+
+
+
+    if index >= len(ACTIONS):
+
+        return None
+
+
+
+    return ACTIONS[index]
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "environment\actions.py") `
+-Value $actions `
+-Encoding UTF8
+
+
+
+
+
+
+
+$controller = @'
+import json
+
+import os
+
+import time
+
+
+import pyautogui
+
+
+
+from config.config import CALIBRATION_PATH
+
+
+
+
+
+
+class Controller:
+
+
+
+    def __init__(self):
+
+
+        self.points={}
+
+
+        self.load()
+
+
+
+
+
+
+
+    def load(self):
+
+
+        if os.path.exists(
+
+            CALIBRATION_PATH
+
+        ):
+
+
+
             with open(
 
-                self.path,
+                CALIBRATION_PATH,
 
                 "r"
 
             ) as file:
 
 
-                self.points=json.load(
-
-                    file
-
-                )
+                self.points=json.load(file)
 
 
 
@@ -1494,14 +2262,14 @@ class Controller:
 
             print(
 
-                "Sin calibrar:",
+                "Accion sin calibrar:",
 
                 name
 
             )
 
 
-            return
+            return False
 
 
 
@@ -1529,6 +2297,8 @@ class Controller:
 
 
 
+        return True
+
 
 
 
@@ -1537,23 +2307,19 @@ class Controller:
     def execute(self,action):
 
 
-        if action:
+        return self.click(
 
+            action
 
-            self.click(
-
-                action
-
-            )
-
+        )
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "environment\controller.py") `
-    -Value $controller `
-    -Encoding UTF8
+-Path (Join-Path $project "environment\controller.py") `
+-Value $controller `
+-Encoding UTF8
 
 
 
@@ -1561,7 +2327,7 @@ Set-Content `
 
 
 
-$calibration=@'
+$calibration = @'
 import tkinter as tk
 
 import json
@@ -1570,19 +2336,31 @@ import os
 
 
 
+from config.config import CALIBRATION_PATH
 
 
-BUTTONS=[
+
+
+
+
+ACTIONS=[
+
 
 "open_monitor",
 
-"close_monitor",
+"camera_1a",
 
-"camera_left",
+"camera_1b",
 
-"camera_right",
+"camera_2a",
 
-"camera_cycle",
+"camera_2b",
+
+"camera_3",
+
+"camera_4a",
+
+"camera_4b",
 
 "left_light",
 
@@ -1614,13 +2392,12 @@ class Calibration:
 
 
 
-
     def select(self,name):
 
 
         print(
 
-            "Pulsa sobre:",
+            "Selecciona:",
 
             name
 
@@ -1629,6 +2406,7 @@ class Calibration:
 
 
         root=tk.Tk()
+
 
 
         root.attributes(
@@ -1678,6 +2456,7 @@ class Calibration:
         )
 
 
+
         root.mainloop()
 
 
@@ -1693,24 +2472,25 @@ class Calibration:
 
 
 
-
     def run(self):
 
 
-        for button in BUTTONS:
+        for action in ACTIONS:
 
 
-            self.select(
+            self.select(action)
 
-                button
 
-            )
 
 
 
         os.makedirs(
 
-            "config",
+            os.path.dirname(
+
+                CALIBRATION_PATH
+
+            ),
 
             exist_ok=True
 
@@ -1718,9 +2498,11 @@ class Calibration:
 
 
 
+
+
         with open(
 
-            "config/calibration.json",
+            CALIBRATION_PATH,
 
             "w"
 
@@ -1737,14 +2519,21 @@ class Calibration:
 
             )
 
+
+
+        print(
+
+            "Calibracion guardada"
+
+        )
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "environment\calibration.py") `
-    -Value $calibration `
-    -Encoding UTF8
+-Path (Join-Path $project "environment\calibration.py") `
+-Value $calibration `
+-Encoding UTF8
 
 
 
@@ -1752,51 +2541,100 @@ Set-Content `
 
 
 
-$state=@'
-import numpy as np
+$reward = @'
+class RewardSystem:
+
+
+
+    def __init__(self):
+
+
+        self.previous={}
 
 
 
 
 
-class GameState:
+
+    def calculate(self,state):
+
+
+        reward=0
 
 
 
-    def build(self,features):
 
 
-        state=np.zeros(
 
-            56,
-
-            dtype=np.float32
-
-        )
+        if state[0]>0:
 
 
-        size=min(
-
-            len(features),
-
-            56
-
-        )
+            reward+=0.05
 
 
-        state[:size]=features[:size]
 
 
-        return state
 
+
+        if state[1]>0:
+
+
+            reward+=0.05
+
+
+
+
+
+
+        if state[2]>0:
+
+
+            reward+=0.15
+
+
+
+
+
+
+        if state[3]>0:
+
+
+            reward+=0.05
+
+
+
+
+
+
+        if state[12]>0:
+
+
+            reward-=100
+
+
+
+
+
+
+        if state[13]>0:
+
+
+            reward+=200
+
+
+
+
+
+
+        return reward
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "environment\state.py") `
-    -Value $state `
-    -Encoding UTF8
+-Path (Join-Path $project "environment\rewards.py") `
+-Value $reward `
+-Encoding UTF8
 
 
 
@@ -1804,24 +2642,29 @@ Set-Content `
 
 
 
-$environment=@'
+$env = @'
 import time
-
-import torch
 
 
 
 from environment.vision import Vision
 
+from environment.template_manager import TemplateManager
+
+from environment.detector import Detector
+
+from environment.state import GameState
+
 from environment.controller import Controller
 
 from environment.actions import get_action
 
-from environment.state import GameState
+from environment.rewards import RewardSystem
 
 
 
-from ai.vision_net import VisionNetwork
+from config.config import TEMPLATE_PATH
+
 
 
 
@@ -1837,17 +2680,32 @@ class FNAFEnvironment:
         self.vision=Vision()
 
 
+
+        self.templates=TemplateManager(
+
+            TEMPLATE_PATH
+
+        )
+
+
+
+        self.detector=Detector(
+
+            self.templates
+
+        )
+
+
+
+        self.state_builder=GameState()
+
+
+
         self.controller=Controller()
 
 
-        self.state=GameState()
 
-
-
-        self.network=VisionNetwork()
-
-
-        self.network.eval()
+        self.reward=RewardSystem()
 
 
 
@@ -1862,7 +2720,7 @@ class FNAFEnvironment:
 
 
 
-        return self.make_state(
+        detections=self.detector.detect(
 
             frame
 
@@ -1870,46 +2728,9 @@ class FNAFEnvironment:
 
 
 
+        return self.state_builder.build(
 
-
-
-
-
-    def make_state(self,frame):
-
-
-        image=self.vision.process(
-
-            frame
-
-        )
-
-
-
-        tensor=torch.tensor(
-
-            image
-
-        ).unsqueeze(0)
-
-
-
-
-
-        with torch.no_grad():
-
-
-            output=self.network(
-
-                tensor
-
-            )
-
-
-
-        return self.state.build(
-
-            output.numpy()[0]
+            detections
 
         )
 
@@ -1920,19 +2741,20 @@ class FNAFEnvironment:
 
 
 
-    def step(self,action):
+    def step(self,action_id):
 
 
-        command=get_action(
+        action=get_action(
 
-            action
+            action_id
 
         )
+
 
 
         self.controller.execute(
 
-            command
+            action
 
         )
 
@@ -1950,7 +2772,7 @@ class FNAFEnvironment:
 
 
 
-        next_state=self.make_state(
+        detections=self.detector.detect(
 
             frame
 
@@ -1958,10 +2780,44 @@ class FNAFEnvironment:
 
 
 
-        reward=0.1
+        next_state=self.state_builder.build(
+
+            detections
+
+        )
+
+
+
+        reward=self.reward.calculate(
+
+            next_state
+
+        )
+
 
 
         done=False
+
+
+
+
+
+        if next_state[12]>0:
+
+
+            done=True
+
+
+
+
+
+        if next_state[13]>0:
+
+
+            done=True
+
+
+
 
 
 
@@ -1974,15 +2830,16 @@ class FNAFEnvironment:
             done
 
         )
-
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "environment\env.py") `
-    -Value $environment `
-    -Encoding UTF8
+-Path (Join-Path $project "environment\env.py") `
+-Value $env `
+-Encoding UTF8
+
+
 
 
 
@@ -1992,104 +2849,24 @@ Write-Host ""
 
 Write-Host "Entorno FNAF creado correctamente." -ForegroundColor Green
 
-$graphs=@'
-from PyQt6.QtWidgets import QWidget,QVBoxLayout
 
-import pyqtgraph as pg
-
-
-
-
-
-class Graphs(QWidget):
-
-
-    def __init__(self):
-
-        super().__init__()
-
-
-        layout=QVBoxLayout()
-
-
-        self.graph=pg.PlotWidget()
-
-
-        self.graph.setTitle(
-
-            "Training Reward"
-
-        )
-
-
-        layout.addWidget(
-
-            self.graph
-
-        )
-
-
-        self.values=[]
-
-
-        self.setLayout(
-
-            layout
-
-        )
-
-
-
-
-
-    def update_value(self,value):
-
-
-        self.values.append(
-
-            value
-
-        )
-
-
-        self.graph.clear()
-
-
-        self.graph.plot(
-
-            self.values,
-
-            pen=pg.mkPen(
-
-                "green",
-
-                width=3
-
-            )
-
-        )
-
-'@
-
-
-
-Set-Content `
-    -Path (Join-Path $project "ui\graphs.py") `
-    -Value $graphs `
-    -Encoding UTF8
-
-
-
-
-
-
-
-$network=@'
+$networkView = @'
 import math
+
+import random
+
 
 from PyQt6.QtWidgets import QWidget
 
-from PyQt6.QtGui import QPainter,QColor,QPen
+from PyQt6.QtGui import (
+
+    QPainter,
+
+    QColor,
+
+    QPen
+
+)
 
 from PyQt6.QtCore import QTimer
 
@@ -2105,18 +2882,35 @@ class NetworkView(QWidget):
         super().__init__()
 
 
-        self.layers=[56,256,256,128,14]
+
+        self.layers=[
+
+            64,
+
+            512,
+
+            256,
+
+            128,
+
+            12
+
+        ]
 
 
-        self.time=0
+
+        self.activations=[]
+
+
+        self.phase=0
 
 
 
         self.resize(
 
-            900,
+            1000,
 
-            450
+            500
 
         )
 
@@ -2125,11 +2919,13 @@ class NetworkView(QWidget):
         self.timer=QTimer()
 
 
+
         self.timer.timeout.connect(
 
-            self.animate
+            self.update_animation
 
         )
+
 
 
         self.timer.start(
@@ -2143,13 +2939,29 @@ class NetworkView(QWidget):
 
 
 
-    def animate(self):
+
+    def set_values(self,values):
 
 
-        self.time+=0.15
+        self.activations=values
 
 
         self.update()
+
+
+
+
+
+
+
+    def update_animation(self):
+
+
+        self.phase+=0.05
+
+
+        self.update()
+
 
 
 
@@ -2166,6 +2978,7 @@ class NetworkView(QWidget):
         )
 
 
+
         painter.setRenderHint(
 
             QPainter.RenderHint.Antialiasing
@@ -2174,40 +2987,46 @@ class NetworkView(QWidget):
 
 
 
+
+
+        positions=[]
+
+
+
         spacing=self.width()/(len(self.layers)+1)
 
 
 
-        nodes=[]
+
+
+        for index,size in enumerate(self.layers):
+
+
+            nodes=[]
 
 
 
-        for layer,size in enumerate(self.layers):
-
-
-            layer_nodes=[]
-
-
-            amount=min(
+            visible=min(
 
                 size,
 
-                18
+                20
 
             )
 
 
-            for index in range(amount):
+
+            for n in range(visible):
 
 
-                x=(layer+1)*spacing
+                x=(index+1)*spacing
 
 
-                y=40+(index*20)
+                y=40+(n*22)
 
 
 
-                layer_nodes.append(
+                nodes.append(
 
                     (
 
@@ -2221,11 +3040,8 @@ class NetworkView(QWidget):
 
 
 
-            nodes.append(
+            positions.append(nodes)
 
-                layer_nodes
-
-            )
 
 
 
@@ -2237,11 +3053,11 @@ class NetworkView(QWidget):
 
                 QColor(
 
-                    90,
+                    80,
 
-                    90,
+                    80,
 
-                    90
+                    80
 
                 ),
 
@@ -2253,11 +3069,14 @@ class NetworkView(QWidget):
 
 
 
+
+
+
         for current,next_layer in zip(
 
-            nodes[:-1],
+            positions[:-1],
 
-            nodes[1:]
+            positions[1:]
 
         ):
 
@@ -2266,6 +3085,44 @@ class NetworkView(QWidget):
 
 
                 for x2,y2 in next_layer:
+
+
+                    intensity=int(
+
+                        (
+
+                        math.sin(
+
+                            self.phase+x1
+
+                        )
+
+                        +1
+
+                        )
+
+                        *
+
+                        70
+
+                    )
+
+
+
+                    painter.setPen(
+
+                        QColor(
+
+                            40,
+
+                            40+intensity,
+
+                            120+intensity
+
+                        )
+
+                    )
+
 
 
                     painter.drawLine(
@@ -2285,26 +3142,26 @@ class NetworkView(QWidget):
 
 
 
-        for layer in nodes:
+
+        for layer in positions:
 
 
             for x,y in layer:
 
 
-                pulse=(
+                value=random.random()
 
-                    math.sin(
 
-                        self.time+x
 
-                    )
+                color=int(
 
-                    +
+                    80+
 
-                    1
+                    value*
 
-                )*80
+                    170
 
+                )
 
 
 
@@ -2312,9 +3169,9 @@ class NetworkView(QWidget):
 
                     QColor(
 
-                        40,
+                        color,
 
-                        120+int(pulse),
+                        120,
 
                         255
 
@@ -2326,24 +3183,23 @@ class NetworkView(QWidget):
 
                 painter.drawEllipse(
 
-                    int(x-6),
+                    int(x-7),
 
-                    int(y-6),
+                    int(y-7),
 
-                    12,
+                    14,
 
-                    12
+                    14
 
                 )
-
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "ui\network_view.py") `
-    -Value $network `
-    -Encoding UTF8
+-Path (Join-Path $project "dashboard\network_view.py") `
+-Value $networkView `
+-Encoding UTF8
 
 
 
@@ -2351,17 +3207,179 @@ Set-Content `
 
 
 
-$dashboard=@'
+$graphs = @'
+from PyQt6.QtWidgets import QWidget,QVBoxLayout
+
+import pyqtgraph as pg
+
+
+
+
+
+
+class RewardGraph(QWidget):
+
+
+
+    def __init__(self):
+
+
+        super().__init__()
+
+
+
+        layout=QVBoxLayout()
+
+
+
+        self.plot=pg.PlotWidget()
+
+
+
+        self.plot.setTitle(
+
+            "Reward"
+
+        )
+
+
+
+        layout.addWidget(
+
+            self.plot
+
+        )
+
+
+
+        self.values=[]
+
+
+
+        self.setLayout(
+
+            layout
+
+        )
+
+
+
+
+
+
+
+    def add_reward(self,value):
+
+
+        self.values.append(
+
+            value
+
+        )
+
+
+
+        self.plot.clear()
+
+
+
+        self.plot.plot(
+
+            self.values,
+
+            pen="cyan"
+
+        )
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "dashboard\graphs.py") `
+-Value $graphs `
+-Encoding UTF8
+
+
+
+
+
+
+
+$monitor = @'
+from PyQt6.QtCore import QObject,pyqtSignal
+
+
+
+
+
+class TrainingMonitor(QObject):
+
+
+    reward_changed=pyqtSignal(float)
+
+
+    status_changed=pyqtSignal(str)
+
+
+
+    def update_reward(self,value):
+
+
+        self.reward_changed.emit(
+
+            value
+
+        )
+
+
+
+
+    def update_status(self,text):
+
+
+        self.status_changed.emit(
+
+            text
+
+        )
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "dashboard\monitor.py") `
+-Value $monitor `
+-Encoding UTF8
+
+
+
+
+
+
+
+$dashboard = @'
 import sys
 
 
-from PyQt6.QtWidgets import QApplication,QWidget,QVBoxLayout,QLabel
+
+from PyQt6.QtWidgets import (
+
+    QApplication,
+
+    QWidget,
+
+    QVBoxLayout,
+
+    QLabel
+
+)
 
 
 
-from ui.network_view import NetworkView
+from dashboard.network_view import NetworkView
 
-from ui.graphs import Graphs
+from dashboard.graphs import RewardGraph
+
 
 
 
@@ -2370,7 +3388,9 @@ from ui.graphs import Graphs
 class Dashboard(QWidget):
 
 
+
     def __init__(self):
+
 
         super().__init__()
 
@@ -2378,18 +3398,21 @@ class Dashboard(QWidget):
 
         self.setWindowTitle(
 
-            "RedNeuronal FNAF 1"
+            "RedNeuronal FNAF 1 - Brain"
 
         )
+
 
 
         self.resize(
 
-            1100,
+            1200,
 
-            750
+            900
 
         )
+
+
 
 
 
@@ -2399,7 +3422,7 @@ class Dashboard(QWidget):
 
         self.status=QLabel(
 
-            "Neural Network Online"
+            "Esperando IA..."
 
         )
 
@@ -2409,7 +3432,7 @@ class Dashboard(QWidget):
 
 
 
-        self.graph=Graphs()
+        self.graph=RewardGraph()
 
 
 
@@ -2420,11 +3443,13 @@ class Dashboard(QWidget):
         )
 
 
+
         layout.addWidget(
 
             self.network
 
         )
+
 
 
         layout.addWidget(
@@ -2446,6 +3471,23 @@ class Dashboard(QWidget):
 
 
 
+
+    def set_status(self,text):
+
+
+        self.status.setText(
+
+            text
+
+        )
+
+
+
+
+
+
+
+
     def run(self):
 
 
@@ -2456,7 +3498,9 @@ class Dashboard(QWidget):
         )
 
 
+
         self.show()
+
 
 
         sys.exit(
@@ -2464,15 +3508,14 @@ class Dashboard(QWidget):
             app.exec()
 
         )
-
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "ui\dashboard.py") `
-    -Value $dashboard `
-    -Encoding UTF8
+-Path (Join-Path $project "dashboard\dashboard.py") `
+-Value $dashboard `
+-Encoding UTF8
 
 
 
@@ -2480,8 +3523,15 @@ Set-Content `
 
 
 
-$main=@'
+Write-Host ""
+
+Write-Host "Dashboard neuronal creado correctamente." -ForegroundColor Green
+
+
+$main = @'
 import argparse
+
+import threading
 
 import time
 
@@ -2489,58 +3539,16 @@ import time
 
 from ai.agent import Agent
 
+from ai.trainer import Trainer
+
+
 from environment.env import FNAFEnvironment
+
 
 from environment.calibration import Calibration
 
-from ui.dashboard import Dashboard
 
-
-
-
-
-def calibrate():
-
-    Calibration().run()
-
-
-
-
-
-def dashboard():
-
-    Dashboard().run()
-
-
-
-
-
-def collect():
-
-
-    env=FNAFEnvironment()
-
-
-    while True:
-
-
-        frame=env.vision.capture()
-
-
-        env.vision.save(
-
-            frame
-
-        )
-
-
-        time.sleep(
-
-            0.5
-
-        )
-
-
+from dashboard.dashboard import Dashboard
 
 
 
@@ -2549,97 +3557,33 @@ def collect():
 def train():
 
 
+    print(
+
+        "Iniciando entrenamiento..."
+
+    )
+
+
+
     env=FNAFEnvironment()
+
 
 
     agent=Agent()
 
 
 
-    episode=0
+    trainer=Trainer(
+
+        agent,
+
+        env
+
+    )
 
 
 
-    while True:
-
-
-        episode+=1
-
-
-        state=env.reset()
-
-
-        done=False
-
-
-        reward_total=0
-
-
-
-
-
-        while not done:
-
-
-            action=agent.act(
-
-                state
-
-            )
-
-
-
-            next_state,reward,done=env.step(
-
-                action
-
-            )
-
-
-
-            agent.remember(
-
-                state,
-
-                action,
-
-                reward,
-
-                next_state,
-
-                done
-
-            )
-
-
-
-            agent.learn()
-
-
-
-            state=next_state
-
-
-            reward_total+=reward
-
-
-
-
-        agent.save()
-
-
-
-        print(
-
-            "Episode:",
-
-            episode,
-
-            "Reward:",
-
-            reward_total
-
-        )
+    trainer.run()
 
 
 
@@ -2650,92 +3594,220 @@ def train():
 def play():
 
 
+    print(
+
+        "Modo jugador IA"
+
+    )
+
+
+
     env=FNAFEnvironment()
+
 
 
     agent=Agent()
 
 
 
+    state=env.reset()
+
+
+
+
+
+
     while True:
 
 
-        state=env.reset()
+        action=agent.act(
+
+            state,
+
+            False
+
+        )
 
 
-        done=False
+
+        state,reward,done=env.step(
+
+            action
+
+        )
 
 
 
-        while not done:
+        if done:
 
 
-            action=agent.act(
+            print(
 
-                state,
-
-                False
+                "Partida terminada"
 
             )
 
 
-            state,_,done=env.step(
-
-                action
-
-            )
+            time.sleep(2)
 
 
+
+            state=env.reset()
 
 
 
 
-parser=argparse.ArgumentParser()
-
-
-parser.add_argument(
-
-    "--mode"
-
-)
-
-
-args=parser.parse_args()
 
 
 
-if args.mode=="dashboard":
-
-    dashboard()
+def calibrate():
 
 
-elif args.mode=="calibrate":
-
-    calibrate()
+    Calibration().run()
 
 
-elif args.mode=="collect":
-
-    collect()
 
 
-elif args.mode=="train":
-
-    train()
 
 
-elif args.mode=="play":
 
-    play()
+def dashboard():
 
+
+    Dashboard().run()
+
+
+
+
+
+
+
+def train_with_dashboard():
+
+
+    env=FNAFEnvironment()
+
+
+
+    agent=Agent()
+
+
+
+    trainer=Trainer(
+
+        agent,
+
+        env
+
+    )
+
+
+
+    thread=threading.Thread(
+
+        target=trainer.run
+
+    )
+
+
+
+    thread.daemon=True
+
+
+
+    thread.start()
+
+
+
+    Dashboard().run()
+
+
+
+
+
+
+
+def main():
+
+
+
+    parser=argparse.ArgumentParser()
+
+
+
+    parser.add_argument(
+
+        "--mode",
+
+        required=True
+
+    )
+
+
+
+    args=parser.parse_args()
+
+
+
+
+
+    if args.mode=="train":
+
+
+        train()
+
+
+
+
+
+    elif args.mode=="train_dashboard":
+
+
+        train_with_dashboard()
+
+
+
+
+
+    elif args.mode=="play":
+
+
+        play()
+
+
+
+
+
+    elif args.mode=="calibrate":
+
+
+        calibrate()
+
+
+
+
+
+    elif args.mode=="dashboard":
+
+
+        dashboard()
+
+
+
+
+
+if __name__=="__main__":
+
+
+    main()
 '@
 
 
 
 Set-Content `
-    -Path (Join-Path $project "main.py") `
-    -Value $main `
-    -Encoding UTF8
+-Path (Join-Path $project "main.py") `
+-Value $main `
+-Encoding UTF8
 
 
 
@@ -2743,53 +3815,30 @@ Set-Content `
 
 
 
-$start=@'
-param(
-
-[string]$mode="dashboard"
-
-)
-
-
-
+$launcher = @'
 $python="venv\Scripts\python.exe"
 
 
 
-& $python main.py --mode $mode
-'@
-
-
-
-Set-Content `
-    -Path (Join-Path $project "start.ps1") `
-    -Value $start `
-    -Encoding UTF8
-
-
-
-
-
-
-
-$launcher=@'
 Write-Host ""
 
-Write-Host "================================"
+Write-Host "=============================="
 
 Write-Host " RedNeuronal FNAF 1 "
 
-Write-Host "================================"
+Write-Host "=============================="
 
 Write-Host ""
+
+
 
 Write-Host "1 - Dashboard"
 
 Write-Host "2 - Calibrar"
 
-Write-Host "3 - Capturar datos"
+Write-Host "3 - Entrenar"
 
-Write-Host "4 - Entrenar IA"
+Write-Host "4 - Entrenar + Dashboard"
 
 Write-Host "5 - Jugar"
 
@@ -2801,18 +3850,61 @@ $option=Read-Host "Selecciona"
 
 
 
+
+
 switch($option){
 
 
-1 {.\start.ps1 dashboard}
 
-2 {.\start.ps1 calibrate}
+1 {
 
-3 {.\start.ps1 collect}
 
-4 {.\start.ps1 train}
+& $python main.py --mode dashboard
 
-5 {.\start.ps1 play}
+
+}
+
+
+
+2 {
+
+
+& $python main.py --mode calibrate
+
+
+}
+
+
+
+3 {
+
+
+& $python main.py --mode train
+
+
+}
+
+
+
+4 {
+
+
+& $python main.py --mode train_dashboard
+
+
+}
+
+
+
+5 {
+
+
+& $python main.py --mode play
+
+
+}
+
+
 
 }
 '@
@@ -2820,9 +3912,60 @@ switch($option){
 
 
 Set-Content `
-    -Path (Join-Path $project "launcher.ps1") `
-    -Value $launcher `
-    -Encoding UTF8
+-Path (Join-Path $project "launcher.ps1") `
+-Value $launcher `
+-Encoding UTF8
+
+
+
+
+
+
+
+$start = @'
+Write-Host ""
+
+Write-Host "RedNeuronal FNAF 1"
+
+Write-Host ""
+
+
+
+powershell -ExecutionPolicy Bypass -File launcher.ps1
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project "start.ps1") `
+-Value $start `
+-Encoding UTF8
+
+
+
+
+
+
+
+$gitignore = @'
+venv/
+
+__pycache__/
+
+*.pyc
+
+logs/
+
+data/screenshots/
+
+'@
+
+
+
+Set-Content `
+-Path (Join-Path $project ".gitignore") `
+-Value $gitignore `
+-Encoding UTF8
 
 
 
@@ -2834,14 +3977,16 @@ Write-Host ""
 
 Write-Host "====================================" -ForegroundColor Green
 
-Write-Host " RedNeuronal FNAF 1 instalado "
+Write-Host " RedNeuronal FNAF 1 FINALIZADA "
 
 Write-Host "====================================" -ForegroundColor Green
 
 Write-Host ""
 
-Write-Host "Ejecuta:" -ForegroundColor Cyan
+Write-Host "Ruta del proyecto:"
 
-Write-Host "cd $project"
+Write-Host $project
 
-Write-Host ".\launcher.ps1"
+Write-Host ""
+
+Write-Host "Ejecuta launcher.ps1 para comenzar."
