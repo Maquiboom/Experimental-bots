@@ -319,9 +319,69 @@ Set-Content `
 
 
 $calibration = @'
-{
+import json
+import os
+import keyboard
+import pyautogui
 
-}
+from config.config import CALIBRATION_PATH
+
+ACTIONS=[
+"open_monitor",
+"camera_1a",
+"camera_1b",
+"camera_2a",
+"camera_2b",
+"camera_3",
+"camera_4a",
+"camera_4b",
+"left_light",
+"left_door",
+"right_light",
+"right_door"
+]
+
+class Calibration:
+
+    def __init__(self):
+        self.data={}
+
+    def select(self,name):
+        print()
+        print("Coloca el ratón sobre:",name)
+        input("Pulsa ENTER para guardar...")
+
+        x,y=pyautogui.position()
+
+        self.data[name]={
+            "x":x,
+            "y":y
+        }
+
+        print("Guardado:",x,y)
+
+    def run(self):
+
+        for action in ACTIONS:
+            self.select(action)
+
+        os.makedirs(
+            os.path.dirname(CALIBRATION_PATH),
+            exist_ok=True
+        )
+
+        with open(
+            CALIBRATION_PATH,
+            "w"
+        ) as file:
+
+            json.dump(
+                self.data,
+                file,
+                indent=4
+            )
+
+        print("Calibración terminada")
 '@
 
 
@@ -2328,62 +2388,37 @@ Set-Content `
 
 
 $calibration = @'
-import tkinter as tk
-
 import json
-
 import os
-
-
+import time
+import pyautogui
 
 from config.config import CALIBRATION_PATH
 
 
-
-
-
-
 ACTIONS=[
 
-
 "open_monitor",
-
 "camera_1a",
-
 "camera_1b",
-
 "camera_2a",
-
 "camera_2b",
-
 "camera_3",
-
 "camera_4a",
-
 "camera_4b",
-
 "left_light",
-
 "left_door",
-
 "right_light",
-
 "right_door"
 
 ]
 
 
 
-
-
-
-
 class Calibration:
 
 
-
     def __init__(self):
-
 
         self.data={}
 
@@ -2391,81 +2426,38 @@ class Calibration:
 
 
 
-
     def select(self,name):
+
+        print("")
+        print("==============================")
+        print("Calibrando:",name)
+        print("Pon el raton donde corresponde")
+        print("Pulsa ENTER para guardar")
+        print("==============================")
+
+
+        input()
+
+
+        position=pyautogui.position()
+
+
+        self.data[name]={
+
+            "x":position.x,
+
+            "y":position.y
+
+        }
 
 
         print(
-
-            "Selecciona:",
-
-            name
-
+            "Guardado:",
+            position.x,
+            position.y
         )
 
-
-
-        root=tk.Tk()
-
-
-
-        root.attributes(
-
-            "-fullscreen",
-
-            True
-
-        )
-
-
-
-        result=[]
-
-
-
-
-
-        def click(event):
-
-
-            result.append(
-
-                {
-
-                "x":event.x,
-
-                "y":event.y
-
-                }
-
-            )
-
-
-            root.destroy()
-
-
-
-
-
-        root.bind(
-
-            "<Button-1>",
-
-            click
-
-        )
-
-
-
-        root.mainloop()
-
-
-
-        if result:
-
-
-            self.data[name]=result[0]
-
+        time.sleep(0.5)
 
 
 
@@ -2477,7 +2469,6 @@ class Calibration:
 
         for action in ACTIONS:
 
-
             self.select(action)
 
 
@@ -2487,9 +2478,7 @@ class Calibration:
         os.makedirs(
 
             os.path.dirname(
-
                 CALIBRATION_PATH
-
             ),
 
             exist_ok=True
@@ -2521,11 +2510,8 @@ class Calibration:
 
 
 
-        print(
-
-            "Calibracion guardada"
-
-        )
+        print("")
+        print("Calibracion guardada correctamente")
 '@
 
 
@@ -3361,7 +3347,6 @@ $dashboard = @'
 import sys
 
 
-
 from PyQt6.QtWidgets import (
 
     QApplication,
@@ -3375,7 +3360,6 @@ from PyQt6.QtWidgets import (
 )
 
 
-
 from dashboard.network_view import NetworkView
 
 from dashboard.graphs import RewardGraph
@@ -3386,7 +3370,6 @@ from dashboard.graphs import RewardGraph
 
 
 class Dashboard(QWidget):
-
 
 
     def __init__(self):
@@ -3427,9 +3410,7 @@ class Dashboard(QWidget):
         )
 
 
-
         self.network=NetworkView()
-
 
 
         self.graph=RewardGraph()
@@ -3443,13 +3424,11 @@ class Dashboard(QWidget):
         )
 
 
-
         layout.addWidget(
 
             self.network
 
         )
-
 
 
         layout.addWidget(
@@ -3487,27 +3466,27 @@ class Dashboard(QWidget):
 
 
 
-
-    def run(self):
-
-
-        app=QApplication(
-
-            sys.argv
-
-        )
+def start_dashboard():
 
 
+    app=QApplication(
 
-        self.show()
+        sys.argv
+
+    )
 
 
+    window=Dashboard()
 
-        sys.exit(
 
-            app.exec()
+    window.show()
 
-        )
+
+    sys.exit(
+
+        app.exec()
+
+    )
 '@
 
 
@@ -3673,8 +3652,9 @@ def calibrate():
 
 def dashboard():
 
+    from dashboard.dashboard import start_dashboard
 
-    Dashboard().run()
+    start_dashboard()
 
 
 
@@ -3719,7 +3699,10 @@ def train_with_dashboard():
 
 
 
-    Dashboard().run()
+    from dashboard.dashboard import start_dashboard
+
+
+    start_dashboard()
 
 
 
